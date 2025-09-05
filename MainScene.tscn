@@ -2,24 +2,48 @@
 
 [ext_resource type="Script" uid="uid://b6vwujh5kaowm" path="res://Container.cs" id="1_rpqi1"]
 [ext_resource type="Script" uid="uid://bepkcqvc8l8t6" path="res://DataLoader.cs" id="1_uxrcv"]
-[ext_resource type="Script" uid="uid://cgdq7gla757k8" path="res://Factory.cs" id="2_uxrcv"]
+[ext_resource type="Script" uid="uid://t5b73dx4exfi" path="res://BuildButton.cs" id="2_5crlr"]
 [ext_resource type="Script" uid="uid://bs5tmttpkkuhq" path="res://ContainerUi.cs" id="3_rf2cd"]
 
-[node name="Node2D" type="VFlowContainer"]
-offset_bottom = 4.0
+[node name="VBoxContainer" type="VBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_uxrcv")
 Filepath = "C:\\Users\\mandersen\\Downloads\\mks.json"
 
-[node name="GlobalContents" type="Node2D" parent="."]
-script = ExtResource("1_rpqi1")
+[node name="MenuBar" type="MenuBar" parent="."]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+switch_on_hover = false
 
-[node name="GlobalContentsUi" type="VBoxContainer" parent="." node_paths=PackedStringArray("ContainerNode")]
+[node name="Build" type="PopupMenu" parent="MenuBar" node_paths=PackedStringArray("TargetNode", "Container")]
+script = ExtResource("2_5crlr")
+TargetNode = NodePath("../../Game area/ScrollContainer3/Building Area")
+Container = NodePath("../../Game area/GlobalContents")
+
+[node name="Game area" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="GlobalContentsUi" type="VBoxContainer" parent="Game area" node_paths=PackedStringArray("ContainerNode")]
 layout_mode = 2
 script = ExtResource("3_rf2cd")
 ContainerName = "World"
 ContainerNode = NodePath("../GlobalContents")
 
-[node name="Factory" type="VBoxContainer" parent="." node_paths=PackedStringArray("ContainerNode")]
+[node name="GlobalContents" type="Node2D" parent="Game area"]
+script = ExtResource("1_rpqi1")
+
+[node name="ScrollContainer3" type="ScrollContainer" parent="Game area"]
 layout_mode = 2
-script = ExtResource("2_uxrcv")
-ContainerNode = NodePath("../GlobalContents")
+size_flags_horizontal = 3
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 2
+
+[node name="Building Area" type="FlowContainer" parent="Game area/ScrollContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3

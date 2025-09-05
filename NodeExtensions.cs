@@ -21,5 +21,19 @@ namespace GraphSim
 
             return parent.GetFirstParentOfType<T>();
         }
+
+        public static IEnumerable<T> GetSiblings<T>(this Godot.Node self) where T : Godot.Node
+        {
+            Godot.Node parent = self.GetParent();
+
+            if (parent == null)
+                return [];
+
+            return
+                parent.GetChildren()
+                .Where(n => !object.ReferenceEquals(n, self))
+                .Where(n => n is T)
+                .Select(n => n as T);
+        }
     }
 }

@@ -10,44 +10,44 @@ public partial class Factory : VBoxContainer
 
     public float Load = 0;
 
-    [Export]
-    Node ContainerNode;
-
     ProgressBar LoadBar = new ProgressBar();
+
+    RichTextLabel ResourceStatus = new RichTextLabel { AutowrapMode = TextServer.AutowrapMode.Off, FitContent = true };
+    RichTextLabel OutputStatus = new RichTextLabel { AutowrapMode = TextServer.AutowrapMode.Off, FitContent = true };
 
     Container Container;
     Data Data;
 
-    OptionButton TypeSelector = new ();
-
     OptionButton ConverterSelector = new();
+
+    public Factory(Building type, Container container)
+    {
+        this.Type = type;
+        this.Container = container;
+    }
 
     public override void _Ready()
     {
         base._Ready();
 
-        Data = this.GetFirstParentOfType<DataLoader>()?.Data;
+        Data = this.GetFirstParentOfType<DataLoader>().Data;
 
-        GD.Print(Data);
-
-        Container = ContainerNode as Container;
-
-        foreach (Building building in Data.Buildings)
+        foreach (Conversion conversion in Type.Conversions)
         {
-            TypeSelector.AddItem(building.Name);
+            ConverterSelector.AddItem(conversion.Name);
         }
 
-        TypeSelector.FitToLongestItem = true;
-        ConverterSelector.FitToLongestItem = true;
-
-        TypeSelector.ItemSelected += TypeSelectionChanged;
         ConverterSelector.ItemSelected += ConversionSelected;
 
+        AddChild(new Label { Text = Type.Name });
         AddChild(LoadBar);
-        AddChild(TypeSelector);
         AddChild(ConverterSelector);
+        AddChild(new HSeparator());
+        AddChild(ResourceStatus);
+        AddChild(new Label { Text = "VVV", HorizontalAlignment = HorizontalAlignment.Center });
+        AddChild(OutputStatus);
 
-        ConverterSelector.Visible = false;
+        ConversionSelected(0);
     }
 
     private void ConversionSelected(long index)
@@ -55,23 +55,12 @@ public partial class Factory : VBoxContainer
         Conversion = Type.Conversions[(int)index];
     }
 
-    private void TypeSelectionChanged(long index)
-    {
-        ConverterSelector.Clear();
-        Conversion = null;
-        ConverterSelector.Visible = true;
-
-        Type = Data.Buildings[(int)index];
-
-        foreach (Conversion conversion in Type.Conversions)
-        {
-            ConverterSelector.AddItem(conversion.Name);
-        }
-    }
-
     public override void _Process(double delta)
     {
         base._Process(delta);
+
+        ResourceStatus.Text = "";
+        OutputStatus.Text = "";
 
         if (Conversion != null)
         {
@@ -81,12 +70,47 @@ public partial class Factory : VBoxContainer
             {
                 if (kvPair.Value > 0)
                 {
-                    Load = Math.Min(Load, Container.SpaceFor(kvPair.Key) / kvPair.Value);
+                    float fract = Container.SpaceFor(kvPair.Key) / kvPair.Value;
+
+                    if (fract < 0.01f)
+                    {
+                        OutputStatus.AddText($"{kvPair.Key}: Full\n");
+                    }
+                    else if (fract < 1.0f)
+                    {
+                        OutputStatus.AddText($"{kvPair.Key}: Limited\n");
+                    }
+                    else
+                    {
+                        OutputStatus.AddText($"{kvPair.Key}: Ok\n");
+                    }
+
+                    Load = Math.Min(Load, fract);
                 }
                 else
                 {
-                    Load = Math.Min(Load, Container.AmountOf(kvPair.Key) / -kvPair.Value);
+                    float fract = Container.AmountOf(kvPair.Key) / -kvPair.Value;
+
+                    if (fract < 0.001f)
+                    {
+                        ResourceStatus.AddText($"{kvPair.Key}: Empty\n");
+                    }
+                    else if (fract < 1.0f)
+                    {
+                        ResourceStatus.AddText($"{kvPair.Key}: Limited\n");
+                    }
+                    else
+                    {
+                        ResourceStatus.AddText($"{kvPair.Key}: Ok\n");
+                    }
+
+                    Load = Math.Min(Load, fract);
                 }
+            }
+
+            if (Load < 0)
+            {
+                Load = 0;
             }
 
             float toProcess = Load * (float)delta;
@@ -96,7 +120,7 @@ public partial class Factory : VBoxContainer
                 Container.Contents[kvPair.Key] += toProcess * kvPair.Value;
             }
 
-            LoadBar.Value = Load;
+            LoadBar.Value = Load * 100;
         }
     }
 }

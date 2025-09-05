@@ -13,6 +13,6 @@ namespace GraphSim
         [JsonPropertyName("Name")]
         public string Name { get; set; }
 
-        public Dictionary<string, float> Amounts { get; set; }
+        public Dictionary<GraphSim.Resource, float> Amounts { get; set; }
     }
 }
