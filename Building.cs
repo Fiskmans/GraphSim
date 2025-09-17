@@ -17,5 +17,8 @@ namespace GraphSim
 
         [JsonPropertyName("Catalysts")]
         public Dictionary<GraphSim.Resource, float> Catalysts { get; set; }
+
+        [JsonPropertyName("Cost")]
+        public Dictionary<GraphSim.Resource, float> Cost { get; set; }
     }
 }

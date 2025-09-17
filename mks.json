@@ -1,0 +1,156 @@
+{
+    "Buildings": [
+        {
+            "Name": "Centrifuge",
+            "Catalysts": {
+                "Machinery": 20
+            },
+            "Conversions": [
+                {
+                    "Name": "Refine Uranium",
+                    "Amounts": {
+                        "ElectricCharge": -20,
+                        "UraniumOre": -10,
+                        "Rock": 0.9,
+                        "Uranium235": 0.003,
+                        "Uranium238": 0.097
+                    }
+                },
+                {
+                    "Name": "Construct Uranium fuel rods",
+                    "Amounts": {
+                        "ElectricCharge": -10,
+                        "Uranium235": -0.005,
+                        "Uranium238": -0.095,
+                        "ReactorFuelRod": 0.01
+                    }
+                },
+                {
+                    "Name": "Construct MOX fuel rods",
+                    "Amounts": {
+                        "ElectricCharge": -10,
+                        "Uranium235": -0.003,
+                        "Plutonium239": -0.002,
+                        "Uranium238": -0.095,
+                        "ReactorFuelRod": 0.01
+                    }
+                },
+                {
+                    "Name": "Reprocess spent Uranium",
+                    "Amounts": {
+                        "ElectricCharge": -100,
+                        "DepletedReactorFuelRod": -0.001,
+                        "Uranium235": 0.00008,
+                        "Plutonium239": 0.0001,
+                        "Plutonium238": 0.000001,
+                        "Uranium238": 0.0096,
+                        "HighRadioactiveWaste": 0.001
+                    }
+                }
+            ]
+        },
+        {
+            "Name": "Small reactor",
+            "Catalysts": {
+				"ReactorFuelRod": 10
+            },
+			"Cost": {
+				
+			},
+            "Conversions": [
+                {
+                    "Name": "Generate power",
+                    "Amounts": {
+                        "ElectricCharge": 1000,
+                        "ReactorFuelRod": -0.001,
+                        "DepletedReactorFuelRod": 0.001,
+						"WasteHeat": 300
+                    }
+                }
+            ]
+        },
+		{
+			"Name": "Arc furnace",
+			"Catalysts" : {
+				"GraphiteCathode": 1
+			},
+			"Cost": {
+				"Iron": 100,
+				"Copper": 5,
+				"ElectricCharge": 1000
+			},
+			"Conversions": [
+				{
+					"Name": "Smelt Iron",
+					"Amounts": {
+						"GraphiteCathode": -0.001,
+						"ElectricCharge": -10,
+						
+						"Hematite": -10,
+						"Slag": 3,
+						"Iron": 1,
+						"Rock": 6,
+						"WasteHeat": 10
+					}
+				},
+				{
+					"Name": "Smelt Copper",
+					"Amounts": {
+						"GraphiteCathode": -0.001,
+						"ElectricCharge": -10,
+						
+						"Malachite": -10,
+						"Slag": 3,
+						"Iron": 1,
+						"Rock": 6,
+						"WasteHeat": 10
+					}
+				}
+			]
+		},
+		{
+			"Name": "Chrusher",
+			"Catalysts" : {
+				"Machinery": 10
+			},
+			"Cost": {
+				"Iron": 10,
+				"ElectricCharge": 100
+			},
+			"Conversions": [
+				{
+					"Name": "Crush slag",
+					"Amounts": {
+						"Machinery": -0.001,
+						"ElectricCharge": -10,
+						
+						"Slag": -20,
+						"Rock": 30,
+						"WasteHeat": 10
+					}
+				}
+			]
+		},
+		{
+			"Name": "RTG",
+			"Catalysts" : {
+				"Plutonium238": 1
+			},
+			"Cost": {
+				"Carbon": 10,
+				"Iron": 200,
+				"Copper": 50
+			},
+			"Conversions": [
+				{
+					"Name": "Generate power",
+					"Amounts": {
+						"ElectricCharge": 50,
+						"WasteHeat": 100,
+						"Plutonium238": -0.00001
+					}
+				}
+			]
+		}
+    ]
+}

@@ -9,76 +9,45 @@ namespace GraphSim
 {
     public enum Resource
     {
-        [Extractable(30.0f, 1, 1, 0, ["solar"])]
+        [Extractable(1.0f, 1, 1, 0, ["solar"])]
         ElectricCharge,
 
-        [Extractable(0.1f, 0.1f,0.8f, 0.1f, ["drill"])]
-        Uraninite,
-        EnrichedUranium,
-        DepletedFuel,
-
-        [Extractable(1, 0.8f, 0.1f, 0.9f, ["gas_capture"])]
-        XenonGas,
-
-        [Extractable(1, 0.2f, 0.2f, 0.25f, ["drill"])]
-        Ore,
-        LiquidFuel,
-        Oxidizer,
-        MonoPropellant,
-
-        [Extractable(1, 0.05f, 0.1f, 0.2f, ["drill"])]
-        Minerals,
-        
-        [Extractable(1, 0.3f, 0.1f, 0.02f, ["drill"])]
-        Dirt,
-        
-        [Extractable(1, 0.1f, 0.1f, 0.2f, ["drill"])]
+        [Dumpable]
         Rock,
+
+        [Extractable(4.0f, 0.6f, 0.1f, 0.2f, ["drill"])]
+        Soil,
+
+        [Separatable("Flotation separation")]
+        Malachite,
+
+        [Separatable("Magnetic separation")]
+        Hematite,
         
-        [Extractable(1, 0.1f, 0.2f, 0.3f, ["drill"])]
-        MetallicOre,
+        [Separatable("Centrifuge")]
+        UraniumOre,
 
-        [Extractable(1, 0.3f, 0.1f, 0.1f, ["drill"])]
-        Substrate,
+        [Decaying(4.0f)]
+        WasteHeat,
 
-        [Extractable(1, 0.6f, 0.6f, 0.6f, ["drill"])]
-        Gypsum,
+        Uranium235,
+        [Dumpable]
+        Uranium238,
+        Plutonium239,
+        Plutonium238,
 
-        [Extractable(1, 0.7f, 0.7f, 0.7f, ["drill"])]
-        Silicates,
+        Slag,
+        Iron,
+        Copper,
+        Carbon,
 
-        [Extractable(1, 0.1f, 0.1f, 0.5f, ["drill"])]
-        Hydrates,
+        GraphiteCathode,
 
-        [Extractable(1, 0.7f, 0.7f, 0.1f, ["drill"])]
-        RareMetals,
+        ReactorFuelRod,
+        DepletedReactorFuelRod,
 
-        [Extractable(1, 0.1f, 0.6f, 0.6f, ["drill"])]
-        ExoticMinerals,
+        HighRadioactiveWaste,
 
-        Water,
-        Fertilizer,
-        Mulch,
-        Supplies,
-        Organics,
-        ColonySupplies,
-
-        Alloys,
-        Chemicals,
-        Metals,
-        Polymers,
-        Silicon,
-        RefinedExotics,
-
-        MaterialKits,
-        Machinery,
-        Recyclables,
-        SpecializedParts,
-        Synthetics,
-        Electronics,
-        Robotics,
-        Prototypes,
-
-        TransportCredits,
+        Machinery
     }
 }

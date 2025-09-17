@@ -1,6 +1,8 @@
 using Godot;
+using GraphSim;
 using System;
 using System.Collections.Generic;
+using System.Data;
 
 public partial class ContainerUi : VBoxContainer, IExtraCapacity
 {
@@ -14,12 +16,12 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
     class Values
     {
         public float Last;
-        public Label Amount;
+        public ResourceBar Bar;
         public RichTextLabel Delta;
         public float Capacity;
     }
 
-    GridContainer ContentArea = new GridContainer { Columns = 5, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    GridContainer ContentArea = new GridContainer { Columns = 4, SizeFlagsHorizontal = SizeFlags.ExpandFill };
     private Dictionary<GraphSim.Resource, Values> Entries = new();
 
     private string FormatDelta(float delta)
@@ -58,7 +60,7 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
             HorizontalScrollMode = ScrollContainer.ScrollMode.ShowNever,
             SizeFlagsVertical = SizeFlags.ExpandFill,
             SizeFlagsHorizontal = SizeFlags.Expand,
-            CustomMinimumSize = new Vector2(400,100),
+            CustomMinimumSize = new Vector2(500,100),
             GrowHorizontal = GrowDirection.Begin,
             SizeFlagsStretchRatio = 1,
             DrawFocusBorder = true
@@ -75,7 +77,7 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
     {
         base._Process(delta);
 
-        foreach (var kvPair in ContainerObject.Contents)
+        foreach (var kvPair in ContainerObject.ReadContents())
         {
             Values vals;
 
@@ -83,8 +85,10 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
             {
                 vals = new();
                 vals.Last = kvPair.Value;
-                vals.Amount = new Label { 
-                    VerticalAlignment = VerticalAlignment.Top,
+                vals.Bar = new ResourceBar
+                {
+                    Label = kvPair.Key.ToString(),
+                    Max = ContainerObject.CapacityFor(kvPair.Key),
                     SizeFlagsStretchRatio = 1 
                 };
                 vals.Delta = new RichTextLabel { 
@@ -105,7 +109,7 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
                     SizeFlagsStretchRatio = 0
                 };
 
-                buy.Pressed += () => ContainerObject.Contents[kvPair.Key] += 1;
+                buy.Pressed += () => ContainerObject.Add(kvPair.Key, Input.IsPhysicalKeyPressed(Key.Shift) ? 100 : 1);
 
                 Button expand = new Button { 
                     Text = "Expand", 
@@ -114,14 +118,40 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
                 };
                 expand.Pressed += () => vals.Capacity += 100.0f;
 
-                ContentArea.AddChild(new Label { Text = kvPair.Key.ToString(), VerticalAlignment = VerticalAlignment.Center });
-                ContentArea.AddChild(vals.Amount);
-                ContentArea.AddChild(vals.Delta);
+                ContentArea.AddChild(vals.Bar);
                 ContentArea.AddChild(buy);
                 ContentArea.AddChild(expand);
+
+                if (kvPair.Key.GetAttribute<DumpableAttribute>() != null)
+                {
+                    CheckBox dump = new CheckBox();
+
+                    dump.Toggled += (bool value) =>
+                    {
+                        if (value)
+                        {
+                            ContainerObject.StartDumping(kvPair.Key);
+                        }
+                        else
+                        {
+                            ContainerObject.StopDumping(kvPair.Key);
+                        }
+                    };
+
+                    ContentArea.AddChild(dump);
+                    GD.Print(kvPair.Key);
+                }
+                else
+                {
+                    ContentArea.AddChild(new Label());
+                }
+
+
+                //ContentArea.AddChild(vals.Delta);
             }
 
-            vals.Amount.Text = $"{kvPair.Value.ToString("0.0")}\n";
+            vals.Bar.Max = ContainerObject.CapacityFor(kvPair.Key);
+            vals.Bar.Value = kvPair.Value;
             vals.Delta.Text = FormatDelta((kvPair.Value - vals.Last) / (float)delta);
             vals.Last = kvPair.Value;
         }
