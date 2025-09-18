@@ -10,26 +10,29 @@ namespace GraphSim
     public partial class ConstructionSite : SlotItem
     {
         Func<SlotItem> OnBuild;
-        Dictionary<GraphSim.Resource, ResourceBar> progress = new();
-        Container Source;
+        List<ResourceBar> UI = new();
 
-        public ConstructionSite(string name, Container source, Dictionary<GraphSim.Resource, float> costs, Func<SlotItem> onBuild)
+        public ConstructionSite(string name, Dictionary<GraphSim.Resource, float> costs, Func<SlotItem> onBuild)
         {
             Tooltip = new VBoxContainer();
-
-            Source = source;
 
             Tooltip.AddChild(new Label { Text = name });
 
             foreach (var kvPair in costs)
             {
-                ResourceBar bar = new ResourceBar
+                LogisticsEndpoint supplies = new LogisticsEndpoint
                 {
-                    Label = kvPair.Key.ToString(),
-                    Max = kvPair.Value
+                    Resource = kvPair.Key,
+                    Capacity = kvPair.Value,
+                    Mode = LogisticsMode.Consumes
                 };
+                AddChild(supplies);
 
-                progress.Add(kvPair.Key, bar);
+                ResourceBar bar = new ResourceBar { Node = supplies };
+
+                bar.Node.OnChange += (a,d) => { QueueRedraw(); };
+
+                UI.Add(bar);
                 Tooltip.AddChild(bar);
             }
             OnBuild = onBuild;
@@ -37,34 +40,7 @@ namespace GraphSim
 
         public override void _Process(double delta)
         {
-            bool done = true;
-            foreach (var kvPair in progress)
-            {
-                if (kvPair.Value.Value < kvPair.Value.Max)
-                {
-                    float available = Source.AmountOf(kvPair.Key);
-                    float wanted = kvPair.Value.Missing;
-
-                    if (available > wanted)
-                    {
-                        Source.Remove(kvPair.Key, wanted);
-                        kvPair.Value.Value = kvPair.Value.Max;
-                        QueueRedraw();
-                    }
-                    else
-                    {
-                        done = false;
-                        if (available > 0)
-                        {
-                            kvPair.Value.Value += available;
-                            Source.Remove(kvPair.Key, available);
-                            QueueRedraw();
-                        }
-                    }
-                }
-            }
-
-            if (done)
+            if (this.GetChildrenOfType<LogisticsEndpoint>().All(l => l.Full))
             {
                 this.GetFirstParentOfType<WorldSlot>().Content = OnBuild();
                 QueueFree();
@@ -75,13 +51,13 @@ namespace GraphSim
         {
             int index = 0;
 
-            float width = ((Size.X * 0.5f) - 3.0f) / progress.Count;
+            float width = ((Size.X * 0.5f) - 3.0f) / UI.Count;
 
-            foreach (var kvPair in progress)
+            foreach (ResourceBar bar in UI)
             {
-                kvPair.Value.DrawAsInternalArc(this, Size * 0.5f, (index + 0.5f) * width, width - 1.0f);
+                bar.DrawAsInternalArc(this, Size * 0.5f, (index + 0.5f) * width, width - 1.0f);
                 index++;
-                DrawCircle(Size * 0.5f, index * width, new Color(1, 1, 1, 0.4f), filled: false, antialiased: true, width: 0.5f);
+                DrawCircle(Size * 0.5f, index * width, new Color(1, 1, 1, 0.4f), filled: false, antialiased: true, width: 0.4f);
             }
         }
     }

@@ -25,6 +25,6 @@ public partial class Extractor : SlotItem
 
     public override void _Process(double delta)
     {
-        Container.Add(Type, (float)delta * Speed);
+        //Container.Add(Type, (float)delta * Speed);
     }
 }

@@ -33,21 +33,32 @@ public partial class ConvertingBuilding : SlotItem
     RichTextLabel ResourceStatus = new RichTextLabel { AutowrapMode = TextServer.AutowrapMode.Off, FitContent = true };
     RichTextLabel Status = new RichTextLabel { AutowrapMode = TextServer.AutowrapMode.Off, FitContent = true };
 
-    Container Container;
+    Dictionary<GraphSim.Resource, LogisticsEndpoint> Inputs = new();
+    Dictionary<GraphSim.Resource, LogisticsEndpoint> Outputs = new();
 
-    Dictionary<GraphSim.Resource, Catalyst> Catalysts = new();
 
-    public ConvertingBuilding(string name, Conversion conversion, Container container, Dictionary<GraphSim.Resource, float> catalysts)
+    public ConvertingBuilding(string name, Conversion conversion, Dictionary<GraphSim.Resource, float> catalysts)
     {
         Label = name;
         Conversion = conversion;
-        Container = container;
 
         if (catalysts != null)
         {
             foreach (var kvPair in catalysts)
             {
-                Catalysts.Add(kvPair.Key, new Catalyst(kvPair.Key, kvPair.Value));
+                Inputs.Add(kvPair.Key, new LogisticsEndpoint { Resource = kvPair.Key, Capacity = kvPair.Value, Mode = LogisticsMode.Consumes });
+            }
+        }
+
+        foreach (var kvPair in conversion.Amounts)
+        {
+            if (kvPair.Value > 0)
+            {
+                Outputs.Add(kvPair.Key, new LogisticsEndpoint { Resource = kvPair.Key, Capacity = kvPair.Value * 10, Mode = LogisticsMode.Produces });
+            }
+            else
+            {
+                Inputs.TryAdd(kvPair.Key, new LogisticsEndpoint { Resource = kvPair.Key, Capacity = -kvPair.Value * 10, Mode = LogisticsMode.Consumes });
             }
         }
 
@@ -56,16 +67,28 @@ public partial class ConvertingBuilding : SlotItem
         Tooltip.AddChild(new Label { Text = Label });
         Tooltip.AddChild(LoadBar);
 
-        if (Catalysts.Count != 0)
-            Tooltip.AddChild(new HSeparator());
-
-        foreach (var kvPair in Catalysts)
+        Tooltip.AddChild(new HSeparator());
+        Tooltip.AddChild(new Label { Text = "Input" });
+        foreach (var kvPair in Inputs)
         {
-            Tooltip.AddChild(kvPair.Value);
+            Tooltip.AddChild(new ResourceBar { Node = kvPair.Value });
+        }
+
+        Tooltip.AddChild(new HSeparator());
+        Tooltip.AddChild(new Label { Text = "Output" });
+        foreach (var kvPair in Outputs)
+        {
+            Tooltip.AddChild(new ResourceBar { Node = kvPair.Value });
         }
 
         Tooltip.AddChild(new HSeparator());
         Tooltip.AddChild(Status);
+
+        foreach (var kvPair in Inputs)
+            AddChild(kvPair.Value);
+
+        foreach (var kvPair in Outputs)
+            AddChild(kvPair.Value);
     }
 
     public override void _Ready()
@@ -101,29 +124,20 @@ public partial class ConvertingBuilding : SlotItem
 
             float toProcess = Load * (float)delta;
 
+            if (toProcess > 1.0f)
+                toProcess = 1.0f;
+
             foreach (var kvPair in Conversion.Amounts)
             {
                 if (kvPair.Value < 0)
                 {
-                    if (Catalysts.ContainsKey(kvPair.Key))
-                    {
-                        Catalysts[kvPair.Key].Consume(toProcess * -kvPair.Value);
-                    }
-                    else
-                    {
-                        Container.Remove(kvPair.Key, toProcess * -kvPair.Value);
-                    }
+                    Inputs[kvPair.Key].Withdraw(toProcess * -kvPair.Value);
                 }
                 else
                 {
-                    Container.Add(kvPair.Key, toProcess * kvPair.Value);
+                    Outputs[kvPair.Key].Deposit(toProcess * kvPair.Value);
                 }
             }
-        }
-
-        foreach (var kvPair in Catalysts)
-        {
-            kvPair.Value.Refill(Container);
         }
     }
 
@@ -135,20 +149,12 @@ public partial class ConvertingBuilding : SlotItem
         {
             if (kvPair.Value > 0)
             {
-                AddStatus($"Space for {kvPair.Key}", Container.SpaceFor(kvPair.Key) / kvPair.Value);
+                AddStatus($"Space for {kvPair.Key}", Outputs[kvPair.Key].Space / kvPair.Value);
             }
             else
             {
-                if (Catalysts.ContainsKey(kvPair.Key))
-                    AddStatus($"Amount of {kvPair.Key}", Catalysts[kvPair.Key].Value / -kvPair.Value);
-                else
-                    AddStatus($"Amount of {kvPair.Key}", Container.AmountOf(kvPair.Key) / -kvPair.Value);
+                AddStatus($"Amount of {kvPair.Key}", Inputs[kvPair.Key].Fraction);
             }
-        }
-
-        foreach (var kvPair in Catalysts)
-        {
-            AddStatus($"Available {kvPair.Key}", kvPair.Value.Fraction);
         }
 
         LoadBar.Value = Load * 100;

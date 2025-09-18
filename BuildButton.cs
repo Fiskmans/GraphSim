@@ -30,18 +30,16 @@ public partial class BuildButton : PopupMenu
 
             mapping.Menu.AddRange(building.Conversions, (c) => c.Name, (c) =>
             {
-                Container cont = Container as Container;
-
                 WorldSlot slot;
 
                 if (!TryGetSlot(out slot))
                     return;
 
-                var creator = () => new ConvertingBuilding($"{building.Name}:{c.Name}", c, cont, building.Catalysts);
+                var creator = () => new ConvertingBuilding($"{building.Name}:{c.Name}", c, building.Catalysts);
 
                 if (building.Cost != null)
                 {
-                    slot.Content = new ConstructionSite(building.Name, cont, building.Cost, creator);
+                    slot.Content = new ConstructionSite(building.Name, building.Cost, creator);
                 }
                 else
                 {
@@ -58,10 +56,6 @@ public partial class BuildButton : PopupMenu
         AddExtractorType(extractor, "drill");
 
         AddSubmenuNodeItem("Extractor", extractor);
-
-        PopupMenu sifting = new PopupMenu();
-        AddSiftable(sifting);
-        AddSubmenuNodeItem("Sifting", sifting);
     }
 
     void AddExtractorType(PopupMenu menu, string extractorTag)
@@ -92,29 +86,6 @@ public partial class BuildButton : PopupMenu
         };
 
         menu.AddSubmenuNodeItem(extractorTag, extractor);
-    }
-
-    void AddSiftable(PopupMenu menu)
-    {
-        foreach (GraphSim.Resource resource in Enum.GetValues<GraphSim.Resource>())
-        {
-            SeparatableAttribute siftable = resource.GetAttribute<SeparatableAttribute>();
-
-            if (siftable == null)
-                continue;
-
-            menu.AddItem(resource.ToString(), (int)resource);
-        }
-
-        menu.IdPressed += (long id) =>
-        {
-            WorldSlot slot;
-
-            if (!TryGetSlot(out slot))
-                return;
-
-            slot.Content = new Sifter(Container as Container, (GraphSim.Resource)id);
-        };
     }
 
     bool TryGetSlot(out WorldSlot slot)

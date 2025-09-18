@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-public partial class ContainerUi : VBoxContainer, IExtraCapacity
+public partial class ContainerUi : VBoxContainer
 {
     [Export]
     public string ContainerName = "N/A";
@@ -17,11 +17,11 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
     {
         public float Last;
         public ResourceBar Bar;
+        public LogisticsEndpoint BuyStash;
         public RichTextLabel Delta;
-        public float Capacity;
     }
 
-    GridContainer ContentArea = new GridContainer { Columns = 4, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+    GridContainer ContentArea = new GridContainer { Columns = 3, SizeFlagsHorizontal = SizeFlags.ExpandFill };
     private Dictionary<GraphSim.Resource, Values> Entries = new();
 
     private string FormatDelta(float delta)
@@ -46,7 +46,6 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
         base._Ready();
 
         ContainerObject = ContainerNode as Container;
-        ContainerObject.ExtraCapacities.Add(this);
 
         foreach (GraphSim.Resource resource in Enum.GetValues<GraphSim.Resource>())
         {
@@ -84,13 +83,9 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
             if (!Entries.TryGetValue(kvPair.Key, out vals))
             {
                 vals = new();
-                vals.Last = kvPair.Value;
-                vals.Bar = new ResourceBar
-                {
-                    Label = kvPair.Key.ToString(),
-                    Max = ContainerObject.CapacityFor(kvPair.Key),
-                    SizeFlagsStretchRatio = 1 
-                };
+                vals.Last = kvPair.Value.Amount;
+                vals.Bar = new ResourceBar { Node = kvPair.Value };
+                vals.BuyStash = new LogisticsEndpoint { Resource = kvPair.Key, Capacity = 1000, Mode = LogisticsMode.Produces };
                 vals.Delta = new RichTextLabel { 
                     BbcodeEnabled = true, 
                     FitContent = true, 
@@ -99,7 +94,7 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
                     SizeFlagsStretchRatio = 0 
                 };
 
-                vals.Capacity = 0;
+                AddChild(vals.BuyStash);
 
                 Entries.Add(kvPair.Key, vals);
 
@@ -109,18 +104,10 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
                     SizeFlagsStretchRatio = 0
                 };
 
-                buy.Pressed += () => ContainerObject.Add(kvPair.Key, Input.IsPhysicalKeyPressed(Key.Shift) ? 100 : 1);
-
-                Button expand = new Button { 
-                    Text = "Expand", 
-                    Size = new Vector2(50, 2),
-                    SizeFlagsStretchRatio = 0
-                };
-                expand.Pressed += () => vals.Capacity += 100.0f;
+                buy.Pressed += () => vals.BuyStash.Deposit(Input.IsPhysicalKeyPressed(Key.Shift) ? 100 : 1);
 
                 ContentArea.AddChild(vals.Bar);
                 ContentArea.AddChild(buy);
-                ContentArea.AddChild(expand);
 
                 if (kvPair.Key.GetAttribute<DumpableAttribute>() != null)
                 {
@@ -139,30 +126,15 @@ public partial class ContainerUi : VBoxContainer, IExtraCapacity
                     };
 
                     ContentArea.AddChild(dump);
-                    GD.Print(kvPair.Key);
                 }
                 else
                 {
                     ContentArea.AddChild(new Label());
                 }
-
-
-                //ContentArea.AddChild(vals.Delta);
             }
 
-            vals.Bar.Max = ContainerObject.CapacityFor(kvPair.Key);
-            vals.Bar.Value = kvPair.Value;
-            vals.Delta.Text = FormatDelta((kvPair.Value - vals.Last) / (float)delta);
-            vals.Last = kvPair.Value;
+            vals.Delta.Text = FormatDelta((kvPair.Value.Amount - vals.Last) / (float)delta);
+            vals.Last = kvPair.Value.Amount;
         }
-    }
-
-    public float ExtraCapacityFor(GraphSim.Resource Type)
-    {
-        Values vals;
-        if (!Entries.TryGetValue(Type, out vals))
-            return 0;
-
-        return vals.Capacity;
     }
 }

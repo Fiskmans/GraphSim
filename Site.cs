@@ -1,13 +1,14 @@
 using Godot;
 using Godot.Collections;
+using GraphSim;
 using System;
 using System.Linq;
 
-public partial class Area : Node
+public partial class Site : LogisticsHub
 {
     Dictionary<GraphSim.Resource, float> Resources = new();
 
-    public Area()
+    public Site()
     {
         Generate();
     }

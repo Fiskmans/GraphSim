@@ -14,9 +14,10 @@ public partial class DataLoader : Node
     {
         base._EnterTree();
 
-        string raw = System.IO.File.ReadAllText(Filepath);
+        FileAccess file = FileAccess.Open(Filepath, FileAccess.ModeFlags.Read);
 
-        Data = JsonSerializer.Deserialize<Data>(raw);
-        GD.Print(Data.Buildings);
+        Data = JsonSerializer.Deserialize<Data>(file.GetAsText());
+
+        file.Close();
     }
 }

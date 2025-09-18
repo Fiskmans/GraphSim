@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://bepkcqvc8l8t6" path="res://DataLoader.cs" id="1_uxrcv"]
 [ext_resource type="Script" uid="uid://t5b73dx4exfi" path="res://BuildButton.cs" id="2_5crlr"]
 [ext_resource type="Script" uid="uid://bs5tmttpkkuhq" path="res://ContainerUi.cs" id="3_rf2cd"]
-[ext_resource type="Script" uid="uid://c1bggfdx7138r" path="res://Area.cs" id="5_a814b"]
+[ext_resource type="Script" uid="uid://bmx883a67csvd" path="res://Site.cs" id="5_a814b"]
 [ext_resource type="Script" uid="uid://cu0g8mq1mv8rx" path="res://ReplaceWith.cs" id="5_rf2cd"]
 
 [node name="VBoxContainer" type="VBoxContainer"]
@@ -14,7 +14,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_uxrcv")
-Filepath = "C:\\Users\\mandersen\\Downloads\\mks.json"
+Filepath = "res://mks.json"
+metadata/_edit_horizontal_guides_ = [93.0]
 
 [node name="MenuBar" type="MenuBar" parent="."]
 custom_minimum_size = Vector2(0, 30)
@@ -24,20 +25,18 @@ switch_on_hover = false
 [node name="Build" type="PopupMenu" parent="MenuBar" node_paths=PackedStringArray("TargetNode", "Container")]
 script = ExtResource("2_5crlr")
 TargetNode = NodePath("../../Game area/ScrollContainer3/Building Area")
-Container = NodePath("../../Game area/GlobalContents")
+Container = NodePath("../../Game area/ScrollContainer3/Building Area/GlobalContents")
 
 [node name="Game area" type="HBoxContainer" parent="."]
 layout_mode = 2
 size_flags_vertical = 3
-
-[node name="GlobalContents" type="Node2D" parent="Game area"]
-script = ExtResource("1_rpqi1")
+script = ExtResource("5_a814b")
 
 [node name="GlobalContentsUi" type="VBoxContainer" parent="Game area" node_paths=PackedStringArray("ContainerNode")]
 layout_mode = 2
 script = ExtResource("3_rf2cd")
 ContainerName = "World"
-ContainerNode = NodePath("../GlobalContents")
+ContainerNode = NodePath("../ScrollContainer3/Building Area/GlobalContents")
 
 [node name="ScrollContainer3" type="ScrollContainer" parent="Game area"]
 layout_mode = 2
@@ -49,7 +48,10 @@ vertical_scroll_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-script = ExtResource("5_a814b")
+
+[node name="GlobalContents" type="Node2D" parent="Game area/ScrollContainer3/Building Area"]
+position = Vector2(-4, 0)
+script = ExtResource("1_rpqi1")
 
 [node name="Slots" type="Node" parent="Game area/ScrollContainer3/Building Area"]
 script = ExtResource("5_rf2cd")

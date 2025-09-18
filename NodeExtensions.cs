@@ -35,5 +35,22 @@ namespace GraphSim
                 .Where(n => n is T)
                 .Select(n => n as T);
         }
+
+        public static IEnumerable<T> GetChildrenOfType<T>(this Godot.Node self, bool recursive = false)
+            where T : Godot.Node
+        {
+            foreach (Godot.Node child in self.GetChildren())
+            {
+                if (child is T)
+                {
+                    yield return child as T;
+                }
+                else if (recursive)
+                {
+                    foreach (T hoisted in child.GetChildrenOfType<T>(recursive))
+                        yield return hoisted;
+                }
+            }
+        }
     }
 }
