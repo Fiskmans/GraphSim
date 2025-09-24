@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,8 +13,7 @@ namespace GraphSim
     {
         class Network
         {
-            const float epsilon = 0.0000000001f;
-            public List<LogisticsEndpoint>[] Layers = [new(), new(), new()];
+            public List<LogisticsEndpoint>[] Layers = [new(), new(), new(), new()];
 
             public void Register(LogisticsEndpoint endpoint)
             {
@@ -32,26 +32,26 @@ namespace GraphSim
                 Transfer(from: Layers[(int)LogisticsMode.Produces],  to: Layers[(int)LogisticsMode.Consumes]);
                 Transfer(from: Layers[(int)LogisticsMode.Stores],    to: Layers[(int)LogisticsMode.Consumes]);
                 Transfer(from: Layers[(int)LogisticsMode.Produces],  to: Layers[(int)LogisticsMode.Stores]);
+                Transfer(from: Layers[(int)LogisticsMode.Produces],  to: Layers[(int)LogisticsMode.Sinks]);
             }
 
             public void Transfer(List<LogisticsEndpoint> from, List<LogisticsEndpoint> to)
             {
-                float available = from.Select(n => n.Amount).Sum();
-                float space = to.Select(n => n.Space).Sum();
-                float amount = Math.Min(available, space);
+                int available = from.Select(n => n.Amount).Sum();
+                int space = to.Select(n => n.Space).Sum();
+                int amount = Math.Min(available, space);
 
-                if (amount <= epsilon)
+                if (amount == 0)
                     return;
 
-                Distribute(from,    amount, (n, a) => n.Withdraw(a));
-                Distribute(to,      amount, (n, a) => n.Deposit(a));
+                Distribute(from, amount, (n, a) => n.Withdraw(a));
+                Distribute(to, amount, (n, a) => n.Deposit(a));
             }
 
             private static ThreadLocal<List<LogisticsEndpoint>> DistroList = new();
 
-            private void Distribute(List<LogisticsEndpoint> between, float amount, Func<LogisticsEndpoint, float, float> applyFunc)
+            private void Distribute(List<LogisticsEndpoint> between, int amount, Func<LogisticsEndpoint, int, int> applyFunc)
             {
-
                 if (!DistroList.IsValueCreated)
                     DistroList.Value = new();
 
@@ -60,11 +60,13 @@ namespace GraphSim
                 list.Clear();
                 list.AddRange(between);
 
-                float excess = amount;
-                while (excess > epsilon)
+                int left = amount;
+                while (left > 0)
                 {
-                    float per = amount / list.Count();
-                    excess = 0f;
+                    int per = left / list.Count();
+
+                    if (per == 0)
+                        per = 1;
 
                     if (list.Count == 0)
                     {
@@ -74,13 +76,12 @@ namespace GraphSim
 
                     for(int i = list.Count - 1; i >= 0; i--)
                     {
-                        float applied = applyFunc(list[i], per);
+                        int applied = applyFunc(list[i], per);
 
-                        if (applied < per - epsilon)
-                        {
+                        left -= applied;
+
+                        if (applied < per)
                             list.RemoveAt(i);
-                            excess += per - applied;
-                        }
                     }
                 }
             }

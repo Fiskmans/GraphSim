@@ -159,25 +159,15 @@
 				"Iron": 200,
 				"Copper": 50
 			},
-			"ModuleSlots": 2,
 			"Modules": [
 				{
 					"Type": "ConverterModule",
 					"Name": "Generate power",
-					"Forced": true,
 					"Input": {
 					},
 					"Output": {
 						"ElectricCharge": 50,
 						"WasteHeat": 100
-					}
-				},
-				{
-					"Type": "StorageModule",
-					"Name": "Heatsink",
-					"Forced": true,
-					"Stores": {
-						"WasteHeat": 1000
 					}
 				}
 			]
@@ -192,7 +182,6 @@
 				{
 					"Type": "ConverterModule",
 					"Name": "Passive",
-					"Forced": true,
 					"Input": {
 						"WasteHeat": 10
 					},

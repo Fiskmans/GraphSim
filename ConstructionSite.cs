@@ -1,4 +1,6 @@
 using Godot;
+using GraphSim.Data;
+using GraphSim.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +25,7 @@ namespace GraphSim
                 LogisticsEndpoint supplies = new LogisticsEndpoint
                 {
                     Resource = kvPair.Key,
-                    Capacity = kvPair.Value,
+                    Capacity = (int)(kvPair.Value * Constants.DataScale),
                     Mode = LogisticsMode.Consumes
                 };
                 AddChild(supplies);

@@ -1,42 +1,68 @@
 using Godot;
-using Godot.Collections;
 using GraphSim;
+using GraphSim.Attributes;
+using GraphSim.Data;
+using GraphSim.Extensions;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 public partial class Site : LogisticsHub
 {
-    Dictionary<GraphSim.Resource, float> Resources = new();
+    Dictionary<GraphSim.Resource, long> SurfaceResources = new();
+
+    List<LogisticsEndpoint> DumpingNodes = new();
 
     public Site()
     {
         Generate();
     }
 
+    public override void _Process(double delta)
+    {
+        base._Process(delta);
+        foreach (LogisticsEndpoint dump in DumpingNodes)
+            Dump(dump.Resource, dump.Withdraw(int.MaxValue));
+    }
+
     public void Generate()
     {
-        Resources.Add(GraphSim.Resource.Rock, 100000);
-        Resources.Add(GraphSim.Resource.Hematite, 100000);
-        Resources.Add(GraphSim.Resource.Malachite, 1000);
+        SurfaceResources.Add(GraphSim.Resource.Rock,        1000000 * (long)Constants.DataScale);
+        SurfaceResources.Add(GraphSim.Resource.Hematite,    100000 * (long)Constants.DataScale);
+        SurfaceResources.Add(GraphSim.Resource.Malachite,   70000 * (long)Constants.DataScale);
     }
 
-    public float FractionOf(GraphSim.Resource resource)
+    public void Dump(GraphSim.Resource resource, int amount)
     {
-        float val;
-        if (!Resources.TryGetValue(resource, out val))
-            return 0.0f;
+        if (!SurfaceResources.ContainsKey(resource))
+            SurfaceResources.Add(resource, 0);
 
-        return val / Resources.Values.Sum();
+        SurfaceResources[resource] += amount;
     }
 
-    public void Remove(GraphSim.Resource resource, float amount)
+    public struct Extraction
     {
-        if (!Resources.ContainsKey(resource))
-            return;
+        public GraphSim.Resource Resource;
+        public int Amount;
+    }
 
-        if ((Resources[resource] -= amount) < 0.0f)
+    public Extraction Extract(int amount)
+    {
+        long total = SurfaceResources.Values.Sum();
+        float selection = GD.Randf();
+        double fraction = 0;
+        foreach (var kvPair in SurfaceResources)
         {
-            Resources.Remove(resource);
+            fraction += (double)kvPair.Value / total;
+
+            int result = (int)Math.Min(kvPair.Value, amount);
+
+            SurfaceResources[kvPair.Key] = kvPair.Value - result;
+
+            if (fraction > selection)
+                return new Extraction { Resource = kvPair.Key, Amount = result };
         }
+
+        return new Extraction { Resource = GraphSim.Resource.Rock, Amount = 0 };
     }
 }

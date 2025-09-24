@@ -1,5 +1,5 @@
 using Godot;
-using GraphSim;
+using GraphSim.Data;
 using System;
 using System.Text.Json;
 
@@ -16,7 +16,12 @@ public partial class DataLoader : Node
 
         FileAccess file = FileAccess.Open(Filepath, FileAccess.ModeFlags.Read);
 
-        Data = JsonSerializer.Deserialize<Data>(file.GetAsText());
+        JsonSerializerOptions options = new JsonSerializerOptions();
+
+        options.Converters.Add(new PolymorphicJsonConverter<Module>());
+        options.Converters.Add(new EnumJsonConverter<GraphSim.Resource>());
+
+        Data = JsonSerializer.Deserialize<Data>(file.GetAsText(), options);
 
         file.Close();
     }

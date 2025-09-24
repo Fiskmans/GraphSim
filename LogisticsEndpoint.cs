@@ -1,4 +1,7 @@
 using Godot;
+using GraphSim.Attributes;
+using GraphSim.Data;
+using GraphSim.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +13,7 @@ namespace GraphSim
     public enum LogisticsMode
     {
         Produces,
+        Sinks,
         Stores,
         Consumes
     }
@@ -17,31 +21,58 @@ namespace GraphSim
     public partial class LogisticsEndpoint : Godot.Node
     {
         LogisticsHub Hub;
-        public GraphSim.Resource Resource;
+        private DecayingAttribute Decay;
+
+        public GraphSim.Resource _Resource;
+        [Export]
+        public GraphSim.Resource Resource
+        {
+            get => _Resource;
+            set
+            {
+                _Resource = value;
+                Decay = value.GetAttribute<DecayingAttribute>();
+            }
+        }
+
+
+        [Export]
         public LogisticsMode Mode;
 
-        public delegate void ChangeHandler(float newValue, float delta);
+        public delegate void ChangeHandler(int newValue, int delta);
 
         public event ChangeHandler OnChange;
 
-        public float _Amount = 0;
-        public float Amount {
+        [Export]
+        public int EditorAmount = 0;
+        public int _Amount = 0;
+        public int Amount {
             get => _Amount;
-            set
+            private set
             {
-                float delta = value - _Amount;
+                if (value == _Amount)
+                    return;
+
+                int delta = value - _Amount;
                 _Amount = value;
                 OnChange?.Invoke(_Amount, delta);
             }
         }
-        public float Capacity;
-        public float Fraction { get => Amount / Capacity; }
-        public float Space { get => Capacity - Amount; }
 
-        public bool Full { get => Space < 0.00001f; }
+        [Export]
+        public int EditorCapacity;
+        public int Capacity;
+        public float Fraction { get => (float)Amount / (float)Capacity; }
+        public float SpaceFraction { get => 1.0f - Fraction; }
+        public int Space { get => Capacity - Amount; }
+
+        public bool Full { get => Space == 0; }
 
         public override void _Ready()
         {
+            Capacity += EditorAmount * Constants.DataScale;
+            Amount += EditorAmount * Constants.DataScale;
+
             Hub = this.GetFirstParentOfType<LogisticsHub>();
             if (Hub != null)
             {
@@ -53,14 +84,20 @@ namespace GraphSim
             }
         }
 
+        public override void _Process(double delta)
+        {
+            if (Decay != null)
+                Amount = Decay.ApplyDecay(Amount);
+        }
+
         public override void _ExitTree()
         {
             Hub?.Unregister(this);
         }
 
-        public float Deposit(float amount)
+        public int Deposit(int amount)
         {
-            float space = Space;
+            int space = Space;
             if (space < amount)
             {
                 Amount = Capacity;
@@ -71,9 +108,9 @@ namespace GraphSim
             return amount;
         }
 
-        public float Withdraw(float amount)
+        public int Withdraw(int amount)
         {
-            float has = Amount;
+            int has = Amount;
             if (has < amount)
             {
                 Amount = 0;
