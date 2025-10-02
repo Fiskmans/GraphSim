@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace GraphSim
 {
-    public partial class ModuleInstance : Control
+    public partial class ModuleInstance : Node2D
     {
         public Module BaseModule;
         public Control UI = new VBoxContainer();
@@ -33,19 +33,23 @@ namespace GraphSim
 
             UI.AddChild(new Label { Text = "Inputs" });
 
-            foreach (var kvPair in input)
-            {
-                LogisticsEndpoint endpoint = new LogisticsEndpoint
-                {
-                    Resource = kvPair.Key,
-                    Capacity = kvPair.Value * Constants.BufferScale * Constants.DataScale,
-                    Mode = LogisticsMode.Consumes
-                };
+            foreach (var kvpair in input)
+                AddInput(kvpair);
+        }
 
-                Inputs.Add(endpoint);
-                UI.AddChild(new ResourceBar { Node = endpoint });
-                AddChild(endpoint);
-            }
+        public void AddInput(KeyValuePair<Resource,int> input)
+        {
+            LogisticsEndpoint endpoint = new LogisticsEndpoint
+            {
+                Resource = input.Key,
+                Capacity = input.Value * Constants.BufferScale * Constants.DataScale,
+                Mode = LogisticsMode.Consumes,
+                Position = new Vector2(5, 5 + 10 * Inputs.Count)
+            };
+
+            Inputs.Add(endpoint);
+            UI.AddChild(new ResourceBar { Node = endpoint });
+            AddChild(endpoint);
         }
 
         protected void SetupBasicOutput(Dictionary<Resource, int> output)
@@ -61,7 +65,8 @@ namespace GraphSim
                 {
                     Resource = kvPair.Key,
                     Capacity = kvPair.Value * Constants.BufferScale * Constants.DataScale,
-                    Mode = LogisticsMode.Produces
+                    Mode = LogisticsMode.Produces,
+                    Position = new Vector2(65, 5 + 10 * BasicOutputs.Count)
                 };
 
                 BasicOutputs.Add(kvPair.Key, endpoint);

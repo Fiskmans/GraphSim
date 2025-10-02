@@ -17,6 +17,8 @@ public partial class ReplaceWith : Node
 
     public override void _Process(double delta)
     {
+        QueueFree();
+
         for (int i = 0; i < Count; i++)
         {
             ObjectHandle handle = Activator.CreateInstance(Assembly, Class);
@@ -31,12 +33,10 @@ public partial class ReplaceWith : Node
             if (!(obj is Node))
             {
                 GD.PrintErr($"{Class} does not derive from Node");
-
+                return;
             }
 
             AddSibling(obj as Node);
         }
-
-        QueueFree();
     }
 }

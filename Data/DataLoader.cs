@@ -20,6 +20,8 @@ public partial class DataLoader : Node
 
         options.Converters.Add(new PolymorphicJsonConverter<Module>());
         options.Converters.Add(new EnumJsonConverter<GraphSim.Resource>());
+        options.Converters.Add(new Rect2IJsonConverter());
+        options.Converters.Add(new PortJsonConverter());
 
         Data = JsonSerializer.Deserialize<Data>(file.GetAsText(), options);
 

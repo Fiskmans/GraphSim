@@ -28,5 +28,11 @@ namespace GraphSim.Data
 
         [JsonPropertyName("Modules")]
         public List<Module> Modules { get; set; }
+
+        [JsonPropertyName("Shape")]
+        public List<Rect2I> Shape { get; set; }
+
+        [JsonPropertyName("Ports")]
+        public List<Port> Ports { get; set; }
     }
 }

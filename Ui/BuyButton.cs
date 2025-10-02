@@ -13,7 +13,7 @@ namespace GraphSim
         {
             this.AddRange(Enum.GetValues<Resource>(), r => r.ToString(), (selected) => 
             { 
-                int amount = Data.Constants.DataScale;
+                int amount = 10;
 
                 if (Input.IsKeyPressed(Key.Shift))
                     amount *= 10;
@@ -21,24 +21,7 @@ namespace GraphSim
                 if (Input.IsKeyPressed(Key.Ctrl))
                     amount *= 100;
 
-                LogisticsEndpoint bought = new LogisticsEndpoint
-                {
-                    Resource = selected,
-                    Capacity = amount,
-                    Mode = LogisticsMode.Produces
-                };
-
-                bought.Deposit(amount);
-
-                bought.OnChange += (v, d) =>
-                {
-                    if (v == 0)
-                        bought.QueueFree();
-
-                    bought.Capacity = v;
-                };
-
-                Destination.AddChild(bought);
+                Destination.AddChild(new Supply { Resource = selected, Stock = amount });
             });
         }
     }

@@ -1,4 +1,5 @@
 using Godot;
+using GraphSim.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,16 +8,29 @@ using System.Threading.Tasks;
 
 namespace GraphSim
 {
-    public partial class TooltipRegion : Godot.Control
+    [Tool]
+    public partial class TooltipRegion : HBoxContainer
     {
+        [Export]
+        private PanelContainer Popup;
 
-        private PanelContainer Popup = new PanelContainer
+        private int _Width = 200;
+
+        [Export]
+        private int Width
         {
-            Visible = false
-        };
+            get => _Width;
+            set
+            {
+                _Width = value;
+                if (Popup != null)
+                    Popup.CustomMinimumSize = new Vector2(value, 0);
+            }
+        }
+
         private Control Content;
-        private SlotItem _TooltipOwner;
-        private SlotItem TooltipOwner {
+        private SiteItem _TooltipOwner;
+        private SiteItem TooltipOwner {
             get => _TooltipOwner;
             set
             {
@@ -32,12 +46,18 @@ namespace GraphSim
         private bool Locked = false;
 
 
-        public override void _EnterTree()
+        public override void _Ready()
         {
-            this.AddChild(Popup);
+            Popup = new PanelContainer
+            {
+                CustomMinimumSize = new Vector2(Width, 0),
+                Name = "TooltipArea"
+            };
+            
+            AddChild(Popup);
         }
 
-        public void Show(Control content, SlotItem owner)
+        public void Show(Control content, SiteItem owner)
         {
             if (Locked)
                 return;
@@ -69,7 +89,6 @@ namespace GraphSim
             TooltipOwner.ShowingTooltip = false;
             TooltipOwner = null;
             Content = null;
-            Popup.Visible = false;
         }
 
         private void TooltipOwner_TreeExited()
@@ -78,7 +97,7 @@ namespace GraphSim
             Close(Content);
         }
 
-        public void ToggleLock(Control content, SlotItem owner)
+        public void ToggleLock(Control content, SiteItem owner)
         {
             if (!object.ReferenceEquals(content, Content))
             {

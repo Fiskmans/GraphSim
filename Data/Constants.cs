@@ -20,6 +20,8 @@ namespace GraphSim.Data
         //How much 1 unit is when read from data (1 per second)
         public const int DataScale = SimulationSpeed * SimulationScale;
 
+        public const float NodeSpacing = 8;
+
         public static string ScaledString(int amount)
         {
             float val = (float)amount / DataScale;

@@ -59,9 +59,6 @@
 						"HighRadioactiveWaste": 1
 					}
 				}
-			],
-			"Shape": [
-				[0,0,9,9]
 			]
 		},
 		{
@@ -69,21 +66,6 @@
 			"Catalysts": {
 				"ReactorFuelRod": 10
 			},
-			"Shape": [
-				[3,0,3,9],
-				[0,3,3,3],
-				[6,3,3,3],
-				[1,1,2,2],
-				[1,6,2,2],
-				[6,1,2,2],
-				[6,6,2,2]
-			],
-			"Ports":[
-				[ 4, 8, "South", "Input" ],
-				[ 4, 0, "North", "Input" ],
-				[ 0, 4, "West", "Output" ],
-				[ 8, 4, "East", "Output" ]
-			],
 			"Cost": {
 				
 			},
@@ -111,21 +93,6 @@
 				"Copper": 5,
 				"ElectricCharge": 1000
 			},
-			"Shape": [
-				[3,0,3,9],
-				[0,3,3,3],
-				[6,3,3,3],
-				[1,1,2,2],
-				[1,6,2,2],
-				[6,1,2,2],
-				[6,6,2,2]
-			],
-			"Ports":[
-				[ 4, 8, "South", "Input" ],
-				[ 4, 0, "North", "Input" ],
-				[ 0, 4, "West", "Output" ],
-				[ 8, 4, "East", "Output" ]
-			],
 			"ModuleSlots": 2,
 			"Modules": [
 				{
@@ -254,32 +221,9 @@
 			"Modules": [
 				{
 					"Type": "ExtractorModule",
-					"Name": "Copper drill media",
-					"Input": {
-						"Copper" : 1,
-						"ElectricCharge": 10
-					},
-					"Resource": "Regolith",
-					"Speed": 10
-				},
-				{
-					"Type": "ExtractorModule",
-					"Name": "Iron drill media",
-					"Input": {
-						"Iron" : 1,
-						"ElectricCharge": 10
-					},
-					"Resource": "Regolith",
-					"Speed": 10
-				},
-				{
-					"Type": "ExtractorModule",
-					"Name": "Slow and steady",
-					"Input": {
-						"ElectricCharge" : 1
-					},
-					"Resource": "Regolith",
-					"Speed": 1
+					"Name": "Surface",
+					"Resource": "Soil",
+					"Multiplier": 1
 				}
 			]
 		},
@@ -296,30 +240,30 @@
 			"Modules": [
 				{
 					"Type": "SorterModule",
-					"Name": "Sort Metals",
-					"Consumes": { 
-						"Regolith": 2,
-						"ElectricCharge": 10
-						},
-					"Accepts": ["Rock", "Hematite", "Malachite"]
-				},
-				{
-					"Type": "SorterModule",
 					"Name": "Sort Hematite",
 					"Consumes": { 
-						"Regolith": 1,
+						"Soil": 1,
 						"ElectricCharge": 5
 						},
-					"Accepts": ["Rock", "Hematite"]
+					"Accepts": ["Hematite"]
 				},
 				{
 					"Type": "SorterModule",
 					"Name": "Sort Malachite",
 					"Consumes": { 
-						"Regolith": 1,
+						"Soil": 1,
 						"ElectricCharge": 5
 						},
-					"Accepts": ["Rock", "Malachite"]
+					"Accepts": ["Malachite"]
+				},
+				{
+					"Type": "SorterModule",
+					"Name": "Sort Metals",
+					"Consumes": { 
+						"Soil": 1,
+						"ElectricCharge": 10
+						},
+					"Accepts": ["Hematite", "Malachite"]
 				}
 			]
 		},
@@ -343,6 +287,20 @@
 					"Stores": {
 						"Copper": 100
 					}
+				},
+				{
+					"Type": "StorageModule",
+					"Name" : "Hematite",
+					"Stores": {
+						"Hematite": 1000
+					}
+				},
+				{
+					"Type": "StorageModule",
+					"Name" : "Malachite",
+					"Stores": {
+						"Malachite": 1000
+					}
 				}
 			]
 		},
@@ -359,61 +317,6 @@
 					"Name": "Copper capacitor cell",
 					"Stores": {
 						"ElectricCharge": 10000
-					}
-				}
-			]
-		},
-		{
-			"Name": "Landfill",
-			"Cost": {
-				"Iron": 5
-			},
-			"ModulesSlots": 1,
-			"Modules" :[
-				{
-					"Type": "StorageModule",
-					"Name": "Mixed allocation",
-					"Stores": {
-						"Regolith": 100,
-						"Rock": 100,
-						"Slag": 100,
-						"Hematite": 100,
-						"Malachite": 100
-					}
-				},
-				{
-					"Type": "StorageModule",
-					"Name": "Regolith allocation",
-					"Stores": {
-						"Regolith": 1000
-					}
-				},
-				{
-					"Type": "StorageModule",
-					"Name": "Rock allocation",
-					"Stores": {
-						"Rock": 5000
-					}
-				},
-				{
-					"Type": "StorageModule",
-					"Name": "Slag allocation",
-					"Stores": {
-						"Slag": 500
-					}
-				},
-				{
-					"Type": "StorageModule",
-					"Name": "Hematite allocation",
-					"Stores": {
-						"Hematite": 1000
-					}
-				},
-				{
-					"Type": "StorageModule",
-					"Name": "Malachite allocation",
-					"Stores": {
-						"Malachite": 1000
 					}
 				}
 			]

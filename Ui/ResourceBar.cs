@@ -63,7 +63,11 @@ namespace GraphSim
 
         public override void _Draw()
         {
-            DrawRect(new Rect2(1 + Size.X * Node.SpaceFraction, 1, Size.X * Node.Fraction, Size.Y), BarColor, true);
+            if (Node.Mode == LogisticsMode.Produces)
+                DrawRect(new Rect2(1 + Size.X * Node.SpaceFraction, 1, Size.X * Node.Fraction, Size.Y), BarColor, true);
+            else
+                DrawRect(new Rect2(1, 1, Size.X * Node.Fraction, Size.Y), BarColor, true);
+            
             DrawRect(new Rect2(1, 1, Size.X, Size.Y), BorderColor, false);
 
             DrawString(Font, new Vector2(3, Size.Y - 4), Node.Resource.ToString(), HorizontalAlignment.Left, Size.X);

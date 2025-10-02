@@ -11,7 +11,7 @@ namespace GraphSim
     public enum Resource
     {
         ElectricCharge,
-        Soil,
+        Regolith,
 
         Rock,
         Malachite,
@@ -30,6 +30,7 @@ namespace GraphSim
         Iron,
         Copper,
         Carbon,
+        Graphite,
 
         GraphiteCathode,
 

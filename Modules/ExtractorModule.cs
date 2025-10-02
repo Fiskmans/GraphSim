@@ -8,11 +8,14 @@ using System.Threading.Tasks;
 
 public class ExtractorModule : Module
 {
+    [JsonPropertyName("Input")]
+    public Dictionary<GraphSim.Resource, int> Input { get; set; }
+
     [JsonPropertyName("Resource")]
     public GraphSim.Resource Resource { get; set; }
 
-    [JsonPropertyName("Multiplier")]
-    public int Multiplier { get; set; } = 1;
+    [JsonPropertyName("Speed")]
+    public int Speed { get; set; } = 1;
 
     public override GraphSim.ModuleInstance Instantiate()
     {

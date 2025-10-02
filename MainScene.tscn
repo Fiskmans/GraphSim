@@ -1,13 +1,11 @@
-[gd_scene load_steps=9 format=3 uid="uid://bo1r8xeydf6q"]
+[gd_scene load_steps=7 format=3 uid="uid://bo1r8xeydf6q"]
 
-[ext_resource type="Script" uid="uid://bepkcqvc8l8t6" path="res://DataLoader.cs" id="1_uxrcv"]
-[ext_resource type="Script" uid="uid://dyv13vy1rj54h" path="res://Ui/BuildButton.cs" id="2_5crlr"]
+[ext_resource type="Script" uid="uid://b6bqx880ttowp" path="res://Data/DataLoader.cs" id="1_a814b"]
+[ext_resource type="Script" uid="uid://dyv13vy1rj54h" path="res://Ui/BuildButton.cs" id="3_5crlr"]
 [ext_resource type="Script" uid="uid://b8mlyl01f4htx" path="res://Ui/BuyButton.cs" id="3_hbc2u"]
-[ext_resource type="Script" uid="uid://bokka2l5kw03r" path="res://LogisticsEndpoint.cs" id="4_5crlr"]
 [ext_resource type="Script" uid="uid://bmx883a67csvd" path="res://Site.cs" id="5_a814b"]
-[ext_resource type="Script" uid="uid://cu0g8mq1mv8rx" path="res://ReplaceWith.cs" id="5_rf2cd"]
+[ext_resource type="Script" uid="uid://g3sh3gvvqjpy" path="res://Supply.cs" id="5_hbc2u"]
 [ext_resource type="Script" uid="uid://44hskh15aakp" path="res://TooltipRegion.cs" id="6_torvr"]
-[ext_resource type="Script" uid="uid://tj8wg0l3hig6" path="res://WorldSlot.cs" id="8_hbc2u"]
 
 [node name="VBoxContainer" type="VBoxContainer"]
 anchors_preset = 15
@@ -15,7 +13,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_uxrcv")
+script = ExtResource("1_a814b")
 Filepath = "res://mks.json"
 metadata/_edit_horizontal_guides_ = [93.0]
 
@@ -24,49 +22,39 @@ custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 switch_on_hover = false
 
-[node name="Build" type="PopupMenu" parent="MenuBar" node_paths=PackedStringArray("TargetNode")]
-script = ExtResource("2_5crlr")
-TargetNode = NodePath("../../Game area/ScrollContainer3/Building Area")
-
 [node name="Buy" type="PopupMenu" parent="MenuBar" node_paths=PackedStringArray("Destination")]
 title = "Buy"
 script = ExtResource("3_hbc2u")
-Destination = NodePath("../../Game area")
+Destination = NodePath("../../Game area/Sites/Site-Alpha/Building Area")
+
+[node name="Build" type="PopupMenu" parent="MenuBar" node_paths=PackedStringArray("Target")]
+script = ExtResource("3_5crlr")
+Target = NodePath("../../Game area/Sites/Site-Alpha/Building Area")
 
 [node name="Game area" type="HBoxContainer" parent="."]
 layout_mode = 2
 size_flags_vertical = 3
-script = ExtResource("5_a814b")
 
-[node name="StartingPlutonium" type="Node" parent="Game area"]
-script = ExtResource("4_5crlr")
-Resource = 10
-EditorAmount = 1
-EditorCapacity = 1
-
-[node name="ScrollContainer3" type="ScrollContainer" parent="Game area"]
+[node name="Sites" type="VBoxContainer" parent="Game area"]
 layout_mode = 2
 size_flags_horizontal = 3
-horizontal_scroll_mode = 2
-vertical_scroll_mode = 2
 
-[node name="Building Area" type="FlowContainer" parent="Game area/ScrollContainer3"]
+[node name="Site-Alpha" type="HBoxContainer" parent="Game area/Sites" node_paths=PackedStringArray("Popup")]
 layout_mode = 2
-size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("6_torvr")
+Popup = NodePath("TooltipArea")
+Width = 250
 
-[node name="Prebuilt RTG" type="PanelContainer" parent="Game area/ScrollContainer3/Building Area"]
+[node name="Building Area" type="Control" parent="Game area/Sites/Site-Alpha"]
 layout_mode = 2
-script = ExtResource("8_hbc2u")
-Autobuild = "RTG"
+size_flags_horizontal = 3
+script = ExtResource("5_a814b")
+MapWidth = 112
+MapHeight = 76
 
-[node name="Prebuild Radiator" type="PanelContainer" parent="Game area/ScrollContainer3/Building Area"]
-layout_mode = 2
-script = ExtResource("8_hbc2u")
-Autobuild = "Radiator"
-
-[node name="Slots" type="Node" parent="Game area/ScrollContainer3/Building Area"]
-script = ExtResource("5_rf2cd")
-Class = "WorldSlot"
-Count = 28
+[node name="StartingPlutonium" type="Node2D" parent="Game area/Sites/Site-Alpha/Building Area"]
+position = Vector2(425, 291)
+script = ExtResource("5_hbc2u")
+Stock = 1
+Resource = 10

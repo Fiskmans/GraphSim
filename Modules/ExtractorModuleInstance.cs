@@ -26,40 +26,49 @@ public partial class ExtractorModuleInstance : ModuleInstance
     {
         Module = module;
 
-        Size = new Vector2(50, 50);
-        SetProcessInput(false);
+        SetupInput(Module.Input);
 
-        Output = new LogisticsEndpoint { Resource = module.Resource, Capacity = module.Multiplier * Constants.DataScale * 10, Mode = LogisticsMode.Produces };
+        Output = new LogisticsEndpoint
+        {
+            Resource = Module.Resource,
+            Capacity = Module.Speed * Constants.DataScale * Constants.BufferScale,
+            Mode = LogisticsMode.Produces,
+            Position = new Vector2(35, 35)
+        };
         AddChild(Output);
-
-        UI = new VBoxContainer();
 
         UI.AddChild(new ResourceBar { Node = Output });
     }
 
     public override int DoWork(int budget)
     {
-        int target = (int)(Output.SpaceFraction * Constants.SimulationScale);
+        int cap = int.Min(GetProductionCapacity(), (int)(Output.SpaceFraction * Constants.SimulationScale));
 
-        int work = budget;
+        int cycles = int.Min(cap, budget);
 
-        if (work > target)
-            work = target;
+        ConsumeInputs(cycles);
 
-        Animation += (float)work / Constants.SimulationScale / Constants.SimulationSpeed * 2.0f;
-        Output.Deposit(Module.Multiplier * target);
+        Animation += (float)cycles / Constants.SimulationScale / Constants.SimulationSpeed * 2.0f;
+        Output.Deposit(Module.Speed * cycles);
 
-        return work;
+        return cycles;
     }
 
     public override void _Draw()
     {
+        Control owner = this.GetFirstParentOfType<Control>();
+
+        if (owner == null)
+            return;
+
+        Vector2 size = owner.Size - this.Position;
+
         int horizontalPadding = 10;
         int verticalPadding = 10;
 
         Vector2 topLeft = new Vector2(horizontalPadding, verticalPadding);
-        Vector2 center = new Vector2(Size.X * 0.5f, Size.Y - verticalPadding);
-        Vector2 topRight = new Vector2(Size.X - horizontalPadding, verticalPadding);
+        Vector2 center = new Vector2(size.X * 0.5f, size.Y - verticalPadding);
+        Vector2 topRight = new Vector2(size.X - horizontalPadding, verticalPadding);
 
         DrawMultiline(
             [

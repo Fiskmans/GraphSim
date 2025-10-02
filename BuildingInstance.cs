@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace GraphSim
 {
-    public partial class BuildingInstance : SlotItem
+    public partial class BuildingInstance : SiteItem
     {
         Data.Building Building;
         string ShortName;
@@ -39,7 +39,7 @@ namespace GraphSim
         List<LogisticsEndpoint> Catalysts = new();
         Button AddModuleButton;
 
-        public BuildingInstance(Building building)
+        public BuildingInstance(Vector2I gridPosition, Building building) : base(gridPosition)
         {
             Building = building;
             ShortName = building.Name.Substr(0,3);
@@ -48,7 +48,14 @@ namespace GraphSim
             {
                 foreach (var kvPair in building.Catalysts)
                 {
-                    Catalysts.Add(new LogisticsEndpoint { Resource = kvPair.Key, Capacity = (int)(kvPair.Value * Constants.DataScale), Mode = LogisticsMode.Consumes });
+                    Catalysts.Add(
+                        new LogisticsEndpoint
+                        {
+                            Resource = kvPair.Key,
+                            Capacity = (int)(kvPair.Value * Constants.DataScale),
+                            Mode = LogisticsMode.Consumes,
+                            Position = new Vector2(35 + 10 * Catalysts.Count, 5)
+                        });
                 }
             }
 
@@ -87,6 +94,19 @@ namespace GraphSim
             }
         }
 
+        public Port GetPort(PortType type)
+        {
+            foreach (Port port in Building.Ports) // TODO: mark ports as busy
+                if (port.Type == type)
+                    return port;
+
+            return null;
+        }
+
+        public override IEnumerable<Rect2I> GetShape()
+        {
+            return Building.Shape;
+        }
 
         public BuildingInstance AddModule(ModuleInstance module)
         {
@@ -144,7 +164,7 @@ namespace GraphSim
 
         public override void _Draw()
         {
-            DrawBorder();
+            base._Draw();
             DrawCircle(new Vector2(Size.X - 5, 5), 4, StatusColor);
             DrawString(Font, new Vector2(2, Size.Y - 3), ShortName);
         }

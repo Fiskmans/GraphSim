@@ -1,45 +1,29 @@
 using Godot;
-using GraphSim;
-using GraphSim.Data;
 using GraphSim.Extensions;
-using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-public partial class BuildButton : PopupMenu
+namespace GraphSim.Ui
 {
-    Data Data;
-
-    [Export]
-    Node TargetNode;
-
-    public override void _Ready()
+    public partial class BuildButton : PopupMenu
     {
-        base._Ready();
+        [Export]
+        Node Target;
 
-        Data = this.GetFirstParentOfType<DataLoader>().Data;
-
-        this.AddRange(Data.Buildings, (b) => b.Name, (b) =>
+        public override void _Ready()
         {
-            WorldSlot slot;
+            base._Ready();
 
-            if (!TryGetSlot(out slot))
-                return;
+            GraphSim.Data.Data Data = this.GetFirstParentOfType<DataLoader>().Data;
+            
 
-            slot.Content = new ConstructionSite(b.Name, b.Cost, () => new BuildingInstance(b));
-        });
-    }
-
-    bool TryGetSlot(out WorldSlot slot)
-    {
-        slot = TargetNode.GetChildren()
-                    .Where((c) => c is WorldSlot)
-                    .Select((c) => c as WorldSlot)
-                    .Where((s) => s.Content == null)
-                    .FirstOrDefault();
-
-        return slot != null;
+            this.AddRange(Data.Buildings, (b) => b.Name, (b) =>
+            {
+                (Target as Site).Construction = new Construction(b);
+            });
+        }
     }
 }

@@ -15,7 +15,6 @@ namespace GraphSim
         Site Site;
 
         Dictionary<GraphSim.Resource, LogisticsEndpoint> Outputs = new();
-        List<LogisticsEndpoint> Inputs = new();
 
         public SorterModuleInstance(SorterModule module) : base(module)
         {
