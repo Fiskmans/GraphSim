@@ -33,14 +33,14 @@ public partial class Site : LogisticsHub
 
     Dictionary<GraphSim.Resource, long> SurfaceResources = new();
 
-    enum GridNode
+    public enum GridNode
     {
         Unstable,
         Stable,
         Busy
     }
 
-    GridNode[,] Map;
+    public GridNode[,] Map { get; private set; }
 
     public Vector2 SnapToGrid(Vector2 pos)
     {
@@ -52,6 +52,16 @@ public partial class Site : LogisticsHub
         return (Vector2I)((pos + new Vector2(0.5f, 0.5f)) % Constants.NodeSpacing);
     }
 
+    public void Block(Vector2I position, Rect2I area)
+    {
+        for (int x = position.X + area.Position.X; x < area.Size.X; x++)
+        {
+            for (int y = position.Y + area.Position.Y; y < area.Size.Y; y++)
+            {
+                Map[x, y] = GridNode.Busy;
+            }
+        }
+    }
 
     void Generate()
     {

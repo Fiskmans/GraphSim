@@ -27,9 +27,8 @@ title = "Buy"
 script = ExtResource("3_hbc2u")
 Destination = NodePath("../../Game area/Sites/Site-Alpha/Building Area")
 
-[node name="Build" type="PopupMenu" parent="MenuBar" node_paths=PackedStringArray("Target")]
+[node name="Build" type="PopupMenu" parent="MenuBar"]
 script = ExtResource("3_5crlr")
-Target = NodePath("../../Game area/Sites/Site-Alpha/Building Area")
 
 [node name="Game area" type="HBoxContainer" parent="."]
 layout_mode = 2
@@ -39,18 +38,16 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Site-Alpha" type="HBoxContainer" parent="Game area/Sites" node_paths=PackedStringArray("Popup")]
+[node name="Site-Alpha" type="HBoxContainer" parent="Game area/Sites"]
 layout_mode = 2
 size_flags_vertical = 3
 script = ExtResource("6_torvr")
-Popup = NodePath("TooltipArea")
-Width = 250
 
 [node name="Building Area" type="Control" parent="Game area/Sites/Site-Alpha"]
 layout_mode = 2
 size_flags_horizontal = 3
 script = ExtResource("5_a814b")
-MapWidth = 112
+MapWidth = 144
 MapHeight = 76
 
 [node name="StartingPlutonium" type="Node2D" parent="Game area/Sites/Site-Alpha/Building Area"]

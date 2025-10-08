@@ -62,6 +62,7 @@ namespace GraphSim
 
         public override void _Ready()
         {
+            Site site = this.GetFirstParentOfType<Site>();
             TooltipRegion = this.GetFirstParentOfType<TooltipRegion>();
 
             int w = 0;
@@ -71,6 +72,8 @@ namespace GraphSim
             {
                 w = int.Max(w, rect.Position.X + rect.Size.X);
                 h = int.Max(h, rect.Position.Y + rect.Size.Y);
+
+                site.Block(GridPosition, rect);
             }
 
             Size = new Vector2(w * Constants.NodeSpacing, h * Constants.NodeSpacing);

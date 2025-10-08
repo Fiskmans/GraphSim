@@ -12,15 +12,29 @@ namespace GraphSim
 {
     public partial class TraceFinder : Node2D
     {
-        public struct TraceCoord
+        public struct TraceCoord : IComparable<TraceCoord>
         {
             public int X;
             public int Y;
             public Direction D;
+            public int W;
 
-            public TraceCoord Offset(Direction d)
+            public Vector2I Flattened => new Vector2I(X, Y);
+
+            public TraceCoord Offset(Direction d, int w)
             {
-                return new TraceCoord { X = X + d.Offset().X, Y = Y + d.Offset().Y, D = d };
+                return new TraceCoord 
+                { 
+                    X = X + d.Offset().X, 
+                    Y = Y + d.Offset().Y, 
+                    D = d, 
+                    W = W + w 
+                };
+            }
+
+            int IComparable<TraceCoord>.CompareTo(TraceCoord other)
+            {
+                return W.CompareTo(other.W);
             }
         }
 
@@ -30,8 +44,9 @@ namespace GraphSim
         {
             public Node() { }
 
-            public Direction Back = Direction.East;
+            public TraceCoord Back;
             public bool Seen = false;
+            public bool Start = false;
         }
 
         Site Site;
@@ -50,44 +65,90 @@ namespace GraphSim
             Site = site;
             Map = new Node[site.MapWidth, site.MapHeight, 8];
 
-            GD.Print($"Starting trace at ({entryPoint.X},{entryPoint.Y}) going {entryPoint.D}");
-
-            Check(entryPoint);
-        }
-
-        public override void _Draw()
-        {
-            List<Vector2I> gridLines = new();
-
-            for (int x = 0; x < Site.MapWidth; x++)
+            for (int x = 0; x < site.MapWidth; x++)
             {
-                for (int y = 0; y < Site.MapHeight; y++)
+                for (int y = 0; y < site.MapHeight; y++)
                 {
-                    foreach(Direction d in Enum.GetValues<Direction>())
+                    if (site.Map[x,y] != Site.GridNode.Stable)
                     {
-                        Node n = this[new TraceCoord { X = x, Y = y, D = d }];
-
-                        if (n.Seen)
+                        foreach (Direction direction in Enum.GetValues<Direction>())
                         {
-                            gridLines.Add(new Vector2I(x, y));
-                            gridLines.Add(new Vector2I(x, y) + d.Reversed().Offset());
+                            this[new TraceCoord { X = x, Y = y, D = direction }].Seen = true; // Works ish, should be blocked or smth instead
                         }
                     }
                 }
             }
+            
 
-            DrawMultiline(gridLines.Select(v => (v + new Vector2(0.5f,0.5f)) * Constants.NodeSpacing).ToArray(), new Color(1, 1, 1));
+            GD.Print($"Starting trace at ({entryPoint.X},{entryPoint.Y}) going {entryPoint.D}");
+
+            this[entryPoint].Start = true;
+            Check(entryPoint, entryPoint);
+        }
+
+        private List<Vector2I> Bake(TraceCoord coord)
+        {
+            TraceCoord at = coord;
+            List<Vector2I> res = new List<Vector2I>();
+
+            while (!this[at].Start)
+            {
+                res.Add(at.Flattened);
+                at = this[at].Back;
+
+                if (!InBounds(at))
+                    return res;
+
+                if (res.Count > 1000)
+                    return res;
+            }
+
+            res.Add(at.Flattened);
+
+            return res;
+        }
+
+        public override void _Draw()
+        {
+            Func<Vector2I, Vector2> scale = (v) => (v + new Vector2(0.5f, 0.5f)) * Constants.NodeSpacing;
+
+            List<Vector2I> gridLines = new();
+
+            foreach (TraceCoord coord in Queue)
+            {
+                List<Vector2I> trace = Bake(coord);
+
+                if (trace.Count() == 0)
+                {
+                    DrawCircle(scale(coord.Flattened), Constants.NodeSpacing * 0.3f, new Color(1, 0, 0), antialiased: true);
+                    continue;
+                }
+
+                DrawCircle(scale(coord.Flattened), Constants.NodeSpacing * 0.3f, new Color(1, 1, 1), antialiased: true);
+
+                gridLines.Add(trace.First());
+
+                for (int i = 1; i < trace.Count - 1; i++)
+                {
+                    gridLines.Add(trace[i]);
+                    gridLines.Add(trace[i]);
+                }
+                gridLines.Add(trace.Last());
+            }
+
+            if (gridLines.Count > 0)
+                DrawMultiline(gridLines.Select(scale).ToArray(), new Color(1, 1, 1, 0.1f));
         }
 
         public override void _Process(double delta)
         {
             base._Process(delta);
-            Budget += delta;
+            Budget += delta * 100;
             if (Budget > 1)
             {
                 Budget -= 1;
                 QueueRedraw();
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 1000 && Queue.Count > 0; i++)
                     Step();
             }
         }
@@ -108,22 +169,26 @@ namespace GraphSim
 
         IEnumerable<TraceCoord> Neighboors(TraceCoord coord)
         {
-            yield return coord.Offset(coord.D);
-            yield return coord.Offset(coord.D.Prev());
-            yield return coord.Offset(coord.D.Next());
+            yield return coord.Offset(coord.D, 1);
+            yield return coord.Offset(coord.D.Prev(), 3);
+            yield return coord.Offset(coord.D.Next(), 3);
         }
 
-        void Check(TraceCoord coord)
+        void Check(TraceCoord coord, TraceCoord from)
         {
             ref Node n = ref this[coord];
 
             if (n.Seen)
                 return;
 
-            n.Back = coord.D.Reversed();
+            n.Back = from;
             n.Seen = true;
 
-            Queue.Add(coord);
+            int index = Queue.BinarySearch(coord);
+
+            if (index < 0) index = ~index;
+
+            Queue.Insert(index, coord);
         }
 
         public void Step()
@@ -132,7 +197,7 @@ namespace GraphSim
             Queue.RemoveAt(0);
 
             foreach (TraceCoord coord in Neighboors(at).Where(InBounds))
-                Check(coord);
+                Check(coord, at);
 
             if (Queue.Count == 0)
             {
