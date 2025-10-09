@@ -49,18 +49,22 @@ public partial class Site : LogisticsHub
 
     public Vector2I GridCoordsAt(Vector2 pos)
     {
-        return (Vector2I)((pos + new Vector2(0.5f, 0.5f)) % Constants.NodeSpacing);
+        return (Vector2I)((pos + new Vector2(0.5f, 0.5f)) / Constants.NodeSpacing);
     }
 
     public void Block(Vector2I position, Rect2I area)
     {
-        for (int x = position.X + area.Position.X; x < area.Size.X; x++)
-        {
-            for (int y = position.Y + area.Position.Y; y < area.Size.Y; y++)
-            {
+        Vector2I topLeft = position + area.Position;
+        Vector2I bottomRight = topLeft + area.Size;
+
+        topLeft = topLeft.Max(new Vector2I(0, 0));
+        bottomRight = bottomRight.Min(new Vector2I(MapWidth, MapHeight));
+
+        for (int x = topLeft.X; x < bottomRight.X; x++)
+            for (int y = topLeft.Y; y < bottomRight.Y; y++)
                 Map[x, y] = GridNode.Busy;
-            }
-        }
+
+        QueueRedraw();
     }
 
     void Generate()
@@ -85,7 +89,7 @@ public partial class Site : LogisticsHub
         QueueRedraw();
     }
 
-    public override void _Ready()
+    public override void _EnterTree()
     {
         Generate();
     }

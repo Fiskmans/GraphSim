@@ -55,6 +55,12 @@ namespace GraphSim.Enums
 
             return new Vector2I(x, y);
         }
+
+        public static int StepsTo(this Direction self, Direction other)
+        {
+            return int.Abs(int.MinMagnitude((int)self - (int)other, (int)other - (int)self));
+        }
+
         public static Direction Reversed(this Direction direction)
         {
             return (Direction)(((int)direction + 4) % 8);

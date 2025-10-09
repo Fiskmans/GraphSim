@@ -89,8 +89,7 @@ namespace GraphSim
                     break;
             }
 
-            if (GridOwner is BuildingInstance building)
-                Port = building.GetPort(wantedType);
+            Port = GridOwner.GetPort(wantedType);
 
             if (Port == null)
                 Port = new Port { Type = wantedType };

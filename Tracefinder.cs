@@ -1,40 +1,45 @@
 using Godot;
 using GraphSim.Data;
 using GraphSim.Enums;
+using GraphSim.Extensions;
 using GraphSim.Ui;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Color = Godot.Color;
 
 namespace GraphSim
 {
     public partial class TraceFinder : Node2D
     {
-        public struct TraceCoord : IComparable<TraceCoord>
+        public const int BasePenality = 1;
+
+        public struct TraceCoord : IEquatable<TraceCoord>
         {
-            public int X;
-            public int Y;
+            public Vector2I Pos;
             public Direction D;
-            public int W;
 
-            public Vector2I Flattened => new Vector2I(X, Y);
-
-            public TraceCoord Offset(Direction d, int w)
+            public override string ToString()
             {
-                return new TraceCoord 
-                { 
-                    X = X + d.Offset().X, 
-                    Y = Y + d.Offset().Y, 
-                    D = d, 
-                    W = W + w 
-                };
+                return $"{Pos.X}, {Pos.Y}, {D}";
             }
 
-            int IComparable<TraceCoord>.CompareTo(TraceCoord other)
+            public bool Equals(TraceCoord other)
             {
-                return W.CompareTo(other.W);
+                return Pos == other.Pos
+                    && D == other.D;
+            }
+
+            public TraceCoord Offset(Direction d)
+            {
+                return new TraceCoord
+                {
+                    Pos = Pos + d.Offset(),
+                    D = d
+                };
             }
         }
 
@@ -47,23 +52,103 @@ namespace GraphSim
             public TraceCoord Back;
             public bool Seen = false;
             public bool Start = false;
+            public bool Blocked = false;
         }
 
         Site Site;
         Node[,,] Map;
+        Rect2I Bounds;
         double Budget;
 
-        List<TraceCoord> Queue = new();
+        struct Tip : IComparable<Tip>
+        {
+            public TraceCoord From;
+            public TraceCoord To;
+
+            public int W;
+            public int StepsSinceTurn;
+            public int H;
+            public Tip()
+            {
+                W = 0;
+                StepsSinceTurn = 0;
+                H = int.MaxValue;
+            }
+
+            public Tip Offset(Direction d)
+            {
+                int turnPenality;
+
+                switch (StepsSinceTurn)
+                {
+                    case 0:
+                        turnPenality = 60;
+                        break;
+                    case 1:
+                        turnPenality = 30;
+                        break;
+                    case 2:
+                        turnPenality = 10;
+                        break;
+                    case 3:
+                    case 4:
+                        turnPenality = 3;
+                        break;
+                    case 5:
+                    case 6:
+                        turnPenality = 2;
+                        break;
+                    default:
+                        turnPenality = 1;
+                        break;
+                }
+
+                if (To.D == d)
+                    turnPenality = 0;
+
+                int penalities = BasePenality + turnPenality;
+
+                return new Tip
+                {
+                    From = To,
+                    To = To.Offset(d),
+                    W = W + penalities,
+                    StepsSinceTurn = d == To.D ? StepsSinceTurn + 1 : 0
+                };
+            }
+
+            int IComparable<Tip>.CompareTo(Tip other)
+            {
+                return (W + H).CompareTo(other.W + other.H);
+            }
+        }
+
+        List<Tip> Queue = new();
+        List<TraceCoord> Targets = new();
 
         ref Node this[TraceCoord coord]
         {
-            get => ref Map[coord.X, coord.Y, (int)coord.D];
+            get => ref Map[coord.Pos.X, coord.Pos.Y, (int)coord.D];
         }
 
-        public TraceFinder(Site site, TraceCoord entryPoint)
+        public TraceFinder(Site site, TraceCoord entryPoint, TraceCoord target)
         {
             Site = site;
             Map = new Node[site.MapWidth, site.MapHeight, 8];
+            Bounds = new Rect2I(0, 0, site.MapWidth, site.MapHeight);
+
+            if (!InBounds(entryPoint))
+            {
+                GD.PrintErr($"Tracing from outside the map {entryPoint}");
+                QueueFree();
+                return;
+            }
+            if (!InBounds(target))
+            {
+                GD.PrintErr($"Tracing to outside the map {target}");
+                QueueFree();
+                return;
+            }
 
             for (int x = 0; x < site.MapWidth; x++)
             {
@@ -73,17 +158,22 @@ namespace GraphSim
                     {
                         foreach (Direction direction in Enum.GetValues<Direction>())
                         {
-                            this[new TraceCoord { X = x, Y = y, D = direction }].Seen = true; // Works ish, should be blocked or smth instead
+                            Map[x,y,(int)direction].Blocked = true;
                         }
                     }
                 }
             }
-            
 
-            GD.Print($"Starting trace at ({entryPoint.X},{entryPoint.Y}) going {entryPoint.D}");
+            Targets.Add(target);
+
+            GD.Print($"Starting trace at {entryPoint} targeting {target}");
 
             this[entryPoint].Start = true;
-            Check(entryPoint, entryPoint);
+
+            Enqueue(new Tip
+            {
+                To = entryPoint
+            });
         }
 
         private List<Vector2I> Bake(TraceCoord coord)
@@ -93,7 +183,7 @@ namespace GraphSim
 
             while (!this[at].Start)
             {
-                res.Add(at.Flattened);
+                res.Add(at.Pos);
                 at = this[at].Back;
 
                 if (!InBounds(at))
@@ -103,9 +193,27 @@ namespace GraphSim
                     return res;
             }
 
-            res.Add(at.Flattened);
+            res.Add(at.Pos);
 
             return res;
+        }
+
+        public void DrawCoord(TraceCoord coord, Color color)
+        {
+            Vector2 center = (coord.Pos + new Vector2(0.5f, 0.5f)) * Constants.NodeSpacing;
+            Vector2 tip = center + ((Vector2)coord.D.Offset()).Normalized() * 5;
+            Vector2[] lines = [
+                center,
+                tip,
+
+                tip,
+                center + ((Vector2)coord.D.Next().Offset()).Normalized() * 3,
+
+                tip,
+                center + ((Vector2)coord.D.Prev().Offset()).Normalized() * 3,
+            ];
+
+            DrawMultiline(lines, color, width:0.8f, antialiased: true);
         }
 
         public override void _Draw()
@@ -114,17 +222,38 @@ namespace GraphSim
 
             List<Vector2I> gridLines = new();
 
-            foreach (TraceCoord coord in Queue)
+            int count = 0;
+
+            const int full = 50;
+            const int point = 500;
+
+            foreach (Tip tip in Queue)
             {
+                count++;
+
+                TraceCoord coord = tip.From;
+
+                if (count > point)
+                    continue;
+
+                if (count > full)
+                {
+                    if (this[coord].Seen)
+                        DrawCoord(coord, new Color(1, 0, 0, (point - (float)count) / (point - full)));
+                    else
+                        DrawCoord(coord, new Color(1, 1, 0, (point - (float)count) / (point - full)));
+                    continue;
+                }
+
                 List<Vector2I> trace = Bake(coord);
 
                 if (trace.Count() == 0)
                 {
-                    DrawCircle(scale(coord.Flattened), Constants.NodeSpacing * 0.3f, new Color(1, 0, 0), antialiased: true);
+                    DrawCoord(coord, new Color(1, 0, 0));
                     continue;
                 }
 
-                DrawCircle(scale(coord.Flattened), Constants.NodeSpacing * 0.3f, new Color(1, 1, 1), antialiased: true);
+                DrawCoord(coord, new Color(1, 1, (full - (float)count) / full));
 
                 gridLines.Add(trace.First());
 
@@ -138,66 +267,112 @@ namespace GraphSim
 
             if (gridLines.Count > 0)
                 DrawMultiline(gridLines.Select(scale).ToArray(), new Color(1, 1, 1, 0.1f));
+
+            foreach (TraceCoord target in Targets)
+                DrawCoord(target, new Color(0.5f, 1, 0.5f));
         }
 
         public override void _Process(double delta)
         {
             base._Process(delta);
             Budget += delta * 100;
-            if (Budget > 1)
+            while (Budget > 1)
             {
                 Budget -= 1;
                 QueueRedraw();
-                for (int i = 0; i < 1000 && Queue.Count > 0; i++)
-                    Step();
+                Step();
             }
         }
 
         bool InBounds(TraceCoord coord)
         {
-            if (coord.X < 0 || coord.Y < 0)
+            return Bounds.Contains(coord.Pos);
+        }
+
+        void UpdateHeuristic(ref Tip tip)
+        {
+            int best = int.MaxValue;
+            ref Node n = ref this[tip.To];
+
+            foreach (TraceCoord t in Targets)
+            {
+                TraceCoord next = tip.To;
+
+                Vector2I delta = t.Pos - next.Pos;
+                
+                int distance = int.Max(int.Abs(delta.X), int.Abs(delta.Y));
+                int rot = next.D.StepsTo(t.D);
+
+                int val = 0;
+                val += distance * BasePenality;
+                if (distance < 10)
+                    val += rot * BasePenality * (9 - distance);
+                else
+                    val += 9 * BasePenality;
+
+                if (!next.Equals(t) && n.Blocked)
+                    tip.H += 1000;
+
+                best = int.Min(val, best);
+            }
+            tip.H = 1;
+        }
+
+        bool Visit(Tip tip)
+        {
+            ref Node n = ref this[tip.To];
+
+            if (n.Seen)
                 return false;
 
-            if (coord.X >= Site.MapWidth)
-                return false;
+            n.Back = tip.From;
+            n.Seen = true;
 
-            if (coord.Y >= Site.MapHeight)
-                return false;
-
+            foreach (TraceCoord t in Targets)
+            {
+                if (tip.To.Equals(t))
+                {
+                    OnCompleted?.Invoke(Bake(tip.To));
+                    QueueFree();
+                    return false;
+                }
+            }
             return true;
         }
 
-        IEnumerable<TraceCoord> Neighboors(TraceCoord coord)
+        void Enqueue(Tip tip)
         {
-            yield return coord.Offset(coord.D, 1);
-            yield return coord.Offset(coord.D.Prev(), 3);
-            yield return coord.Offset(coord.D.Next(), 3);
-        }
-
-        void Check(TraceCoord coord, TraceCoord from)
-        {
-            ref Node n = ref this[coord];
-
-            if (n.Seen)
+            if (!InBounds(tip.To))
                 return;
 
-            n.Back = from;
-            n.Seen = true;
+            ref Node n = ref this[tip.To];
 
-            int index = Queue.BinarySearch(coord);
+            if (n.Seen)
+            {
+                GD.Print("skip");
+                return;
+            }
+
+            UpdateHeuristic(ref tip);
+
+            int index = Queue.BinarySearch(tip);
 
             if (index < 0) index = ~index;
 
-            Queue.Insert(index, coord);
+            Queue.Insert(index, tip);
         }
 
         public void Step()
         {
-            TraceCoord at = Queue.First();
+            Tip at = Queue.First();
             Queue.RemoveAt(0);
 
-            foreach (TraceCoord coord in Neighboors(at).Where(InBounds))
-                Check(coord, at);
+            if (Visit(at))
+            {
+                Enqueue(at.Offset(at.To.D));
+                Enqueue(at.Offset(at.To.D.Next()));
+                Enqueue(at.Offset(at.To.D.Prev()));
+            }
 
             if (Queue.Count == 0)
             {

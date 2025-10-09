@@ -94,12 +94,13 @@ namespace GraphSim
             }
         }
 
-        public Port GetPort(PortType type)
+        public override Port GetPort(PortType type)
         {
             foreach (Port port in Building.Ports) // TODO: mark ports as busy
                 if (port.Type == type)
                     return port;
 
+            GD.Print("No port");
             return null;
         }
 

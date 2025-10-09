@@ -17,10 +17,14 @@ namespace GraphSim.Ui
         {
             base._Ready();
 
-            GraphSim.Data.Data Data = this.GetFirstParentOfType<DataLoader>().Data;
-            
+            if (Target == null || !(Target is Site))
+            {
+                GD.PrintErr("Invalid target node");
+                QueueFree();
+                return;
+            }
 
-            this.AddRange(Data.Buildings, (b) => b.Name, (b) =>
+            this.AddRange(this.GetFirstParentOfType<DataLoader>().Data.Buildings, (b) => b.Name, (b) =>
             {
                 (Target as Site).Construction = new Construction(b);
             });

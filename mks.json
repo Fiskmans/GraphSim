@@ -192,6 +192,15 @@
 				"Iron": 200,
 				"Copper": 50
 			},
+			"Shape": [
+				[0,0,3,3]
+			],
+			"Ports":[
+				[1, 0, "North", "Input"],
+				[0, 1, "West", "Output"],
+				[2, 1, "East", "Output"],
+				[1, 2, "South", "InOut"]
+			],
 			"ModuleSlots": 2,
 			"Modules": [
 				{

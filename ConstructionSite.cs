@@ -14,6 +14,11 @@ namespace GraphSim
         Building Building;
         List<ResourceBar> UI = new();
 
+        public override Port GetPort(PortType type)
+        {
+            return new Port { Position = new Vector2I(0,0), Direction = Enums.Direction.NorthWest, Type = PortType.Input };
+        }
+
         public override IEnumerable<Rect2I> GetShape()
         {
             return Building.Shape;

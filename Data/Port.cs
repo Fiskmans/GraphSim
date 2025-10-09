@@ -29,8 +29,7 @@ namespace GraphSim.Data
         {
             return new TraceFinder.TraceCoord
             {
-                X = Position.X + relativeTo.X + Direction.Offset().X,
-                Y = Position.Y + relativeTo.Y + Direction.Offset().Y,
+                Pos = Position + relativeTo + Direction.Offset(),
                 D = Direction
             };
         }
@@ -39,8 +38,7 @@ namespace GraphSim.Data
         {
             return new TraceFinder.TraceCoord
             {
-                X = Position.X + relativeTo.X,
-                Y = Position.Y + relativeTo.Y,
+                Pos = Position + relativeTo,
                 D = Direction.Reversed()
             };
         }

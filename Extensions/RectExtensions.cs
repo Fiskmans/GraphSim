@@ -22,5 +22,18 @@ namespace GraphSim.Extensions
 
             return true;
         }
+        public static bool Contains(this Rect2I self, Vector2I p)
+        {
+            if (p.X < self.Position.X)
+                return false;
+            if (p.Y < self.Position.Y)
+                return false;
+            if (p.X >= self.Position.X + self.Size.X)
+                return false;
+            if (p.Y >= self.Position.Y + self.Size.Y)
+                return false;
+
+            return true;
+        }
     }
 }

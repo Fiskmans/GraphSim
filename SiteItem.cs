@@ -49,6 +49,8 @@ namespace GraphSim
         public Color FillColor = new Color(0.2f, 0.2f, 0.2f);
 
         public abstract IEnumerable<Rect2I> GetShape();
+        public abstract Port GetPort(PortType type);
+
         public IEnumerable<Rect2> WorldShape()
         {
             return GetShape().Select(r => new Rect2((Vector2)r.Position * Constants.NodeSpacing, (Vector2)r.Size * Constants.NodeSpacing));
@@ -67,6 +69,8 @@ namespace GraphSim
 
             int w = 0;
             int h = 0;
+
+            GD.Print($"Site item added at {GridPosition}");
 
             foreach (Rect2I rect in GetShape())
             {

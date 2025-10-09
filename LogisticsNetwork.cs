@@ -18,9 +18,15 @@ namespace GraphSim
 
         public void Register(LogisticsEndpoint endpoint)
         {
+            LogisticsEndpoint target = null;
+
+            foreach (List<LogisticsEndpoint> endpoints in Layers)
+                target = target ?? endpoints.LastOrDefault();
+
             Layers[(int)endpoint.Mode].Add(endpoint);
 
-            AddChild(new Ui.Trace(this.GetFirstParentOfType<Site>(), endpoint.Exit));
+            if (target != null)
+                AddChild(new Ui.Trace(this.GetFirstParentOfType<Site>(), endpoint.Exit, target.Entry));
         }
 
         public bool Unregister(LogisticsEndpoint endpoint)
