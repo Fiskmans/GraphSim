@@ -1,5 +1,6 @@
 using Godot;
 using GraphSim.Extensions;
+using GraphSim.Ui;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,20 +14,13 @@ namespace GraphSim
     public partial class LogisticsNetwork : Node2D
     {
         public List<LogisticsEndpoint>[] Layers = [new(), new(), new(), new()];
-        List<Ui.Trace> Traces = new();
 
 
         public void Register(LogisticsEndpoint endpoint)
         {
-            LogisticsEndpoint target = null;
-
-            foreach (List<LogisticsEndpoint> endpoints in Layers)
-                target = target ?? endpoints.LastOrDefault();
+            AddChild(new EndpointTraceNode(endpoint));
 
             Layers[(int)endpoint.Mode].Add(endpoint);
-
-            if (target != null)
-                AddChild(new Ui.Trace(this.GetFirstParentOfType<Site>(), endpoint.Exit, target.Entry));
         }
 
         public bool Unregister(LogisticsEndpoint endpoint)

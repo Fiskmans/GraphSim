@@ -12,6 +12,13 @@ using Color = Godot.Color;
 [Tool]
 public partial class Site : LogisticsHub
 {
+    public enum GridNode
+    {
+        Unstable,
+        Stable,
+        Busy
+    }
+
     [Export]
     public int MapWidth = 100;
 
@@ -19,6 +26,10 @@ public partial class Site : LogisticsHub
     public int MapHeight = 100;
 
     Construction _Construction;
+
+    Dictionary<GraphSim.Resource, long> SurfaceResources = new();
+
+    public GridNode[,] Map { get; private set; }
     public Construction Construction
     {
         get => _Construction;
@@ -31,16 +42,15 @@ public partial class Site : LogisticsHub
         }
     }
 
-    Dictionary<GraphSim.Resource, long> SurfaceResources = new();
+    int ModificationProgress = 0;
+    List<IMapModifier> Modifications = new();
 
-    public enum GridNode
+    public void AddModification(IMapModifier modifier) => Modifications.Add(modifier);
+    public void RemoveModification(IMapModifier modifier)
     {
-        Unstable,
-        Stable,
-        Busy
+        if (Modifications.Remove(modifier))
+            ModificationProgress--;
     }
-
-    public GridNode[,] Map { get; private set; }
 
     public Vector2 SnapToGrid(Vector2 pos)
     {
@@ -50,21 +60,6 @@ public partial class Site : LogisticsHub
     public Vector2I GridCoordsAt(Vector2 pos)
     {
         return (Vector2I)((pos + new Vector2(0.5f, 0.5f)) / Constants.NodeSpacing);
-    }
-
-    public void Block(Vector2I position, Rect2I area)
-    {
-        Vector2I topLeft = position + area.Position;
-        Vector2I bottomRight = topLeft + area.Size;
-
-        topLeft = topLeft.Max(new Vector2I(0, 0));
-        bottomRight = bottomRight.Min(new Vector2I(MapWidth, MapHeight));
-
-        for (int x = topLeft.X; x < bottomRight.X; x++)
-            for (int y = topLeft.Y; y < bottomRight.Y; y++)
-                Map[x, y] = GridNode.Busy;
-
-        QueueRedraw();
     }
 
     void Generate()
@@ -128,6 +123,43 @@ public partial class Site : LogisticsHub
         return new Extraction { Resource = GraphSim.Resource.Rock, Amount = 0 };
     }
 
+    public override void _Process(double delta)
+    {
+        if (ModificationProgress < Modifications.Count)
+        {
+            try
+            {
+                IEnumerable<Rect2I> blocks = Modifications[ModificationProgress].GetBlockedRegions();
+                if (blocks == null)
+                    return;
+
+                GD.Print($"{Modifications[ModificationProgress]} Returned: {blocks.Count()} blocks");
+                ModificationProgress++;
+
+                foreach (Rect2I rect in blocks)
+                {
+                    Vector2I topLeft = rect.Position;
+                    Vector2I bottomRight = topLeft + rect.Size;
+
+                    topLeft = topLeft.Max(new Vector2I(0, 0));
+                    bottomRight = bottomRight.Min(new Vector2I(MapWidth, MapHeight));
+
+                    for (int x = topLeft.X; x < bottomRight.X; x++)
+                        for (int y = topLeft.Y; y < bottomRight.Y; y++)
+                            Map[x, y] = GridNode.Busy;
+
+                    QueueRedraw();
+                }
+            }
+            catch (Exception e)
+            {
+                GD.PrintErr($"{(Modifications[ModificationProgress] as Node)?.GetPath()} Failed to get blocked regions: {e.Message}");
+                Modifications.RemoveAt(ModificationProgress);
+                throw;
+            }
+        }
+    }
+
     public override void _GuiInput(InputEvent @event)
     {
         if (Construction != null)
@@ -144,7 +176,8 @@ public partial class Site : LogisticsHub
                 {
                     ConstructionSite site = Construction.Build();
                     AddChild(site);
-                    Construction = null;
+                    if (!Input.IsKeyPressed(Key.Shift))
+                        Construction = null;
                 }
             }
         }

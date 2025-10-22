@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace GraphSim
 {
-    public abstract partial class SiteItem : Control
+    public abstract partial class SiteItem : Control, IMapModifier
     {
         TooltipRegion TooltipRegion;
         public Control Tooltip;
@@ -56,6 +56,11 @@ namespace GraphSim
             return GetShape().Select(r => new Rect2((Vector2)r.Position * Constants.NodeSpacing, (Vector2)r.Size * Constants.NodeSpacing));
         }
 
+        public IEnumerable<Rect2I> GetBlockedRegions()
+        {
+            return GetShape().Select(r => new Rect2I { Position = r.Position + GridPosition, Size = r.Size });
+        }
+
         public SiteItem(Vector2I gridPosition)
         {
             GridPosition = gridPosition;
@@ -70,19 +75,17 @@ namespace GraphSim
             int w = 0;
             int h = 0;
 
-            GD.Print($"Site item added at {GridPosition}");
-
             foreach (Rect2I rect in GetShape())
             {
                 w = int.Max(w, rect.Position.X + rect.Size.X);
                 h = int.Max(h, rect.Position.Y + rect.Size.Y);
-
-                site.Block(GridPosition, rect);
             }
 
             Size = new Vector2(w * Constants.NodeSpacing, h * Constants.NodeSpacing);
 
             MouseExited += () => Hovered = false;
+
+            site.AddModification(this);
         }
 
         public override void _Draw()

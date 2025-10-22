@@ -13,10 +13,11 @@ namespace GraphSim
     {
         Building Building;
         List<ResourceBar> UI = new();
+        int PortCounter = 0;
 
         public override Port GetPort(PortType type)
         {
-            return new Port { Position = new Vector2I(0,0), Direction = Enums.Direction.NorthWest, Type = PortType.Input };
+            return Building.Ports[PortCounter++ % Building.Ports.Count];
         }
 
         public override IEnumerable<Rect2I> GetShape()
@@ -31,6 +32,8 @@ namespace GraphSim
             Tooltip = new VBoxContainer();
 
             Tooltip.AddChild(new Label { Text = Building.Name });
+
+            FillColor.A = 0.5f;
 
             foreach (var kvPair in Building.Cost)
             {
@@ -77,8 +80,8 @@ namespace GraphSim
                 DrawCircle(Size * 0.5f, index * width, new Color(1, 1, 1, 0.4f), filled: false, antialiased: true, width: 0.4f);
             }
 
-            foreach(Port port in Building.Ports)
-                port.Draw(this);
+            //foreach(Port port in Building.Ports)
+            //    port.Draw(this);
         }
     }
 }
