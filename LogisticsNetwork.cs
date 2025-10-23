@@ -26,7 +26,6 @@ namespace GraphSim
         public bool Unregister(LogisticsEndpoint endpoint)
         {
             Layers[(int)endpoint.Mode].Remove(endpoint);
-            QueueRedraw();
 
             return Layers.All(l => l.Count == 0);
         }
@@ -37,8 +36,6 @@ namespace GraphSim
             Transfer(from: Layers[(int)LogisticsMode.Stores], to: Layers[(int)LogisticsMode.Consumes]);
             Transfer(from: Layers[(int)LogisticsMode.Produces], to: Layers[(int)LogisticsMode.Stores]);
             Transfer(from: Layers[(int)LogisticsMode.Produces], to: Layers[(int)LogisticsMode.Sinks]);
-
-            QueueRedraw();
         }
 
         public void Transfer(List<LogisticsEndpoint> from, List<LogisticsEndpoint> to)

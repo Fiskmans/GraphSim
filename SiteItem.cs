@@ -15,6 +15,7 @@ namespace GraphSim
         public Control Tooltip;
         [Export]
         public Vector2I GridPosition;
+        public Vector2I GridSize;
 
         bool _Hovered = false;
         bool Hovered
@@ -69,23 +70,16 @@ namespace GraphSim
 
         public override void _Ready()
         {
-            Site site = this.GetFirstParentOfType<Site>();
             TooltipRegion = this.GetFirstParentOfType<TooltipRegion>();
 
-            int w = 0;
-            int h = 0;
-
             foreach (Rect2I rect in GetShape())
-            {
-                w = int.Max(w, rect.Position.X + rect.Size.X);
-                h = int.Max(h, rect.Position.Y + rect.Size.Y);
-            }
+                GridSize = GridSize.Max(rect.Position + rect.Size);
 
-            Size = new Vector2(w * Constants.NodeSpacing, h * Constants.NodeSpacing);
+            Size = (Vector2)GridSize * Constants.NodeSpacing;
 
             MouseExited += () => Hovered = false;
 
-            site.AddModification(this);
+            this.GetFirstParentOfType<Site>().AddModification(this);
         }
 
         public override void _Draw()

@@ -5,6 +5,7 @@ using GraphSim.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,14 +14,13 @@ namespace GraphSim.Ui
 {
     public partial class Trace : Node2D, IMapModifier
     {
-        Site Site;
         TraceFinder Finder;
 
-        public List<Vector2I> Path = null;
+        public List<Vector2I> Path;
         Vector2[] Points;
-        Resource Resource;
+        Color c = new Color(GD.Randf(), GD.Randf(), GD.Randf());
         float Alpha = 0.0f;
-        bool SplitOnFound = false;
+        bool Unraveling = false;
 
         TraceNode _From;
         TraceNode From
@@ -45,6 +45,12 @@ namespace GraphSim.Ui
             }
         }
 
+        private void Unravel()
+        {
+            Unraveling = true;
+            Path = null;
+        }
+
         public void Detach(TraceNode aNode)
         {
             if (ReferenceEquals(From, aNode))
@@ -54,18 +60,19 @@ namespace GraphSim.Ui
                 To = null;
         }
 
-        public Trace(TraceNode from, Resource resource)
+        public Trace(TraceNode from)
         {
             From = from;
-            Resource = resource;
+            Name = $"Trace_{from.GridPosition.X}_{from.GridPosition.Y}";
         }
 
-        public Trace(TraceNode from, TraceNode to, Resource resource, IEnumerable<Vector2I> path)
+        public Trace(TraceNode from, TraceNode to, IEnumerable<Vector2I> path)
         {
             From = from;
             To = to;
-            Resource = resource;
-            SetPath([.. path]);
+            Path = [.. path];
+            Name = $"Subtrace_{from.GridPosition.X}_{from.GridPosition.Y}";
+            BakePoints();
         }
 
         public override void _Ready()
@@ -79,12 +86,13 @@ namespace GraphSim.Ui
             if (Path == null)
             {
                 if (Finder == null)
-                    SetupTraceFinder();
+                    if (!SetupTraceFinder())
+                        return null;
 
-                int budget = 100;
+                int budget = 30;
                 while (Path == null)
                 {
-                    SetPath(Finder.Step());
+                    TrySetPath(Finder.Step());
 
                     if (budget-- < 0)
                         return null;
@@ -94,10 +102,12 @@ namespace GraphSim.Ui
             return Path?.Select(p => new Rect2I { Position = p, Size = Vector2I.One });
         }
 
-        private void SetupTraceFinder()
+        private bool SetupTraceFinder()
         {
-            Finder = new TraceFinder(this.GetFirstParentOfType<Site>(), Resource);
-            AddChild(Finder);
+            if (Path != null)
+                throw new Exception();
+
+            Finder = new TraceFinder(this.GetFirstParentOfType<Site>());
 
             Finder.AddEntrypoint(From);
 
@@ -110,7 +120,6 @@ namespace GraphSim.Ui
                     continue;
 
                 Finder.AddExits(sibling.Path);
-                SplitOnFound = true;
             }
 
             if (!Finder.HasExit)
@@ -121,34 +130,55 @@ namespace GraphSim.Ui
                         continue;
 
                     Finder.AddExit(node);
+                    break;
                 }
             }
+
+            if (!Finder.HasExit)
+            {
+                Finder = null;
+                this.GetFirstParentOfType<Site>().RemoveModification(this);
+                QueueFree();
+                return false;
+            }
+
+            AddChild(Finder);
+
+            return true;
         }
 
-        public void SetPath(List<Vector2I> path)
+        public void TrySetPath(List<Vector2I> path)
         {
+            if (path == null)
+                return;
+
             Path = path;
+            BakePoints();
+
+            RemoveChild(Finder);
+            Finder = null;
+
+            Connect();
+        }
+
+        private void BakePoints()
+        {
+            Points = null;
+
             if (Path == null)
                 return;
 
-            Finder = null;
-
-            if (path.Count == 0)
+            if (Path.Count == 0)
                 return;
 
-            if (SplitOnFound)
-                AddSibling(new TraceNode(Path.First(), Resource));
+            List<Vector2> res = [Path.First().ScaledToGrid()];
 
-            Func<Vector2I, Vector2> scale = (v) => (v + new Vector2(0.5f, 0.5f)) * Constants.NodeSpacing;
-
-            List<Vector2> res = [scale(path.First())];
-
-            for (int i = 1; i < path.Count - 1; i++)
+            for (int i = 1; i < Path.Count - 1; i++)
             {
-                res.Add(scale(path[i]));
-                res.Add(scale(path[i]));
+                res.Add(Path[i].ScaledToGrid());
+                res.Add(Path[i].ScaledToGrid());
             }
-            res.Add(scale(path.Last()));
+            res.Add(Path.Last().ScaledToGrid());
 
             Points = res.ToArray();
 
@@ -163,13 +193,58 @@ namespace GraphSim.Ui
                 Alpha += (float)delta;
                 QueueRedraw();
             }
+            if (Unraveling)
+            {
+                if (Alpha > 0.0f)
+                {
+                    Alpha -= (float)delta;
+                    QueueRedraw();
+                }
+                else
+                {
+                    QueueFree();
+                }
+            }
         }
 
+        private void Connect()
+        {
+            Vector2I point = Path.First();
+
+            foreach (TraceNode present in this.GetSiblings<TraceNode>())
+                if (present.GridPosition.Equals(point))
+                    return;
+
+            To = new TraceNode(point);
+            AddSibling(To);
+
+            foreach (Trace sibling in this.GetSiblings<Trace>())
+            {
+                if (sibling.Path == null)
+                    continue;
+
+                int index = sibling.Path.IndexOf(point);
+
+                if (index == -1)
+                    continue;
+
+                if (index == 0)
+                    return;
+
+                if (index == sibling.Path.Count - 1)
+                    return;
+
+                AddSibling(new Trace(sibling.From, To, sibling.Path.Take(index + 1)));
+                AddSibling(new Trace(To, sibling.To, sibling.Path.Skip(index)));
+
+                sibling.Unravel();
+                break;
+            }
+        }
         public override void _Draw()
         {
-            base._Draw();
             if (Points != null)
-                DrawMultiline(Points, Resource.Color().OnTrace().Alpha(Alpha));
+                DrawMultiline(Points, new Color(1,1,1).Alpha(Alpha));
         }
     }
 }

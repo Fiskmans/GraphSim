@@ -153,8 +153,9 @@ public partial class Site : LogisticsHub
             }
             catch (Exception e)
             {
-                GD.PrintErr($"{(Modifications[ModificationProgress] as Node)?.GetPath()} Failed to get blocked regions: {e.Message}");
+                Node n = (Modifications[ModificationProgress] as Node);
                 Modifications.RemoveAt(ModificationProgress);
+                GD.PrintErr($"{n.GetPath()} Failed to get blocked regions: {e.Message}");
                 throw;
             }
         }

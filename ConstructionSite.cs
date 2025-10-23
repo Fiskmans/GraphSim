@@ -1,5 +1,6 @@
 using Godot;
 using GraphSim.Data;
+using GraphSim.Enums;
 using GraphSim.Extensions;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,17 @@ namespace GraphSim
 
         public override Port GetPort(PortType type)
         {
-            return Building.Ports[PortCounter++ % Building.Ports.Count];
+            int corner = PortCounter++ % 4;
+
+            switch (corner)
+            {
+            case 0: return new Port { Position = new Vector2I(0, 0), Direction = Direction.NorthWest, Type = PortType.Input };
+            case 1: return new Port { Position = new Vector2I(GridSize.X-1, 0), Direction = Direction.NorthEast, Type = PortType.Input };
+            case 2: return new Port { Position = new Vector2I(GridSize.X-1, GridSize.Y-1), Direction = Direction.SouthEast, Type = PortType.Input };
+            case 3: return new Port { Position = new Vector2I(0, GridSize.Y-1), Direction = Direction.SouthWest, Type = PortType.Input };
+            }
+
+            return new Port { Position = new Vector2I(0, 0), Direction = Direction.North, Type = PortType.Input };
         }
 
         public override IEnumerable<Rect2I> GetShape()
@@ -35,6 +46,24 @@ namespace GraphSim
 
             FillColor.A = 0.5f;
 
+            Name = $"{Building.Name}_Construction";
+        }
+
+        public override void _Process(double delta)
+        {
+            if (this.GetChildrenOfType<LogisticsEndpoint>().All(l => l.Full))
+            {
+                BuildingInstance instance = new BuildingInstance(GridPosition, Building);
+                AddSibling(instance);
+                instance.Position = Position;
+                QueueFree();
+            }
+        }
+
+        public override void _Ready()
+        {
+            base._Ready();
+
             foreach (var kvPair in Building.Cost)
             {
                 LogisticsEndpoint supplies = new LogisticsEndpoint
@@ -47,21 +76,10 @@ namespace GraphSim
 
                 ResourceBar bar = new ResourceBar { Node = supplies };
 
-                bar.Node.OnChange += (a,d) => { QueueRedraw(); };
+                bar.Node.OnChange += (a, d) => { QueueRedraw(); };
 
                 UI.Add(bar);
                 Tooltip.AddChild(bar);
-            }
-        }
-
-        public override void _Process(double delta)
-        {
-            if (this.GetChildrenOfType<LogisticsEndpoint>().All(l => l.Full))
-            {
-                BuildingInstance instance = new BuildingInstance(GridPosition, Building);
-                AddSibling(instance);
-                instance.Position = Position;
-                QueueFree();
             }
         }
 

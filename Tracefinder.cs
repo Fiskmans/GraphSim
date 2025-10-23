@@ -122,10 +122,10 @@ namespace GraphSim
 
         #region Constants
         public const int BasePenalty = 1;
-        public const int BlockPenalty = 50;
-        public const int SharpTurnPenalty = 26;
-        public const int ShortTurnPenalty = 20;
-        public const int TurnPenalty = 8;
+        public const int BlockPenalty = 35;
+        public const int SharpTurnPenalty = 25;
+        public const int ShortTurnPenalty = 15;
+        public const int TurnPenalty = 10;
         public const int MaxPathLength = 1000;
         #endregion
 
@@ -135,7 +135,6 @@ namespace GraphSim
             AStar
         }
 
-        Resource Resource;
         bool IsSetup = false;
         TraceNode[,,] Map = null;
         Rect2I Bounds;
@@ -166,10 +165,10 @@ namespace GraphSim
         public IEnumerable<Vector2I> GetResult() => Bake(Result);
         #endregion
 
-        public TraceFinder(Site site, Resource resource)
+        public TraceFinder(Site site)
         {
-            Resource = resource;
             Setup(site);
+            Name = "Tracefinder";
         }
 
         public void AddEntrypoint(Ui.TraceNode entryPoint)
@@ -264,81 +263,10 @@ namespace GraphSim
             return res;
         }
 
-        public void DrawCoord(TraceCoord coord, Color color)
-        {
-            Vector2 center = (coord.Pos + new Vector2(0.5f, 0.5f)) * Constants.NodeSpacing;
-            Vector2 tip = center + ((Vector2)coord.D.Offset()).Normalized() * 5;
-            Vector2[] lines = [
-                center,
-                tip,
-
-                tip,
-                center + ((Vector2)coord.D.Next().Offset()).Normalized() * 3,
-
-                tip,
-                center + ((Vector2)coord.D.Prev().Offset()).Normalized() * 3,
-            ];
-
-            DrawMultiline(lines, color, width:0.3f, antialiased: true);
-        }
-
         public override void _Draw()
         {
             if (Lines.Count > 0)
-                DrawMultiline(Lines.ToArray(), Resource.Color().OnTrace().Alpha(0.01f));
-
-            /*
-
-            List<Vector2I> gridLines = new();
-
-            int count = 0;
-
-            const int full = 100;
-            const int point = 100;
-
-            foreach (Tip tip in Queue)
-            {
-                count++;
-
-                TraceCoord coord = tip.To;
-
-                if (count > point)
-                    continue;
-
-                if (count > full)
-                {
-                    if (this[coord].Seen)
-                        DrawCoord(coord, new Color(0.3f, 0.3f, 0.3f, 0.3f * (point - (float)count) / (point - full)));
-                    else
-                        DrawCoord(coord, new Color(1, 1, 0, (point - (float)count) / (point - full)));
-                    continue;
-                }
-
-                List<Vector2I> trace = Bake(tip.From);
-
-                if (trace.Count() == 0)
-                {
-                    DrawCoord(coord, new Color(1, 0, 0));
-                    continue;
-                }
-
-                //DrawCoord(coord, new Color(1, 1, 1, (full - (float)count) / full));
-
-                gridLines.Add(trace.First());
-
-                for (int i = 1; i < trace.Count - 1; i++)
-                {
-                    gridLines.Add(trace[i]);
-                    gridLines.Add(trace[i]);
-                }
-                gridLines.Add(trace.Last());
-            }
-
-            if (gridLines.Count > 0)
-                DrawMultiline(gridLines.Select(scale).ToArray(), new Color(1, 1, 1, 0.04f));
-
-            foreach (TraceCoord target in To)
-                DrawCoord(target, new Color(0.5f, 1, 0.5f));*/
+                DrawMultiline(Lines.ToArray(), new Color(1,1,1, 0.05f));
         }
 
         public override void _Process(double delta)
@@ -348,7 +276,7 @@ namespace GraphSim
             if (!IsSetup)
                 return;
 
-            Lines.RemoveRange(0, (Lines.Count() / 500) * 2);
+            Lines.RemoveRange(0, (Lines.Count() / 100) * 2);
 
             Func<Vector2I, Vector2> scale = (v) => (v + new Vector2(0.5f, 0.5f)) * Constants.NodeSpacing;
 
@@ -367,7 +295,10 @@ namespace GraphSim
             else
             {
                 if (Lines.Count == 0)
+                {
+                    QueueFree();
                     return;
+                }
 
                 if (Lines.Count > 0)
                     Lines.RemoveRange(0, 2);
@@ -393,23 +324,18 @@ namespace GraphSim
                 int absDeltaRotation = pos.D.StepsTo(t.D);
 
                 float distancePenalty = distance;
-                int movesToAlign = int.MaxValue;
-
-                if (step.X != 0)
-                    movesToAlign = int.Min(movesToAlign, delta.X * step.X);
-                if (step.Y != 0)
-                    movesToAlign = int.Min(movesToAlign, delta.Y * step.Y);
 
                 float val = 0;
 
-                val += 0.4f *
-                    float.Min(
-                        float.Max(0, ((Vector2)t.D.Next().Offset()).Normalized().Dot(-delta) + 4),
-                        float.Max(0, ((Vector2)t.D.Prev().Offset()).Normalized().Dot(-delta) + 4));
+                //val += 0.4f *
+                //    float.Min(
+                //        float.Max(0, ((Vector2)t.D.Next().Offset()).Normalized().Dot(-delta) + 4),
+                //        float.Max(0, ((Vector2)t.D.Prev().Offset()).Normalized().Dot(-delta) + 4));
 
-                val += 1.0f * float.Max(0, ((Vector2)t.D.Offset()).Normalized().Dot(-delta) + 5);
+                val += 1.0f * float.Max(0, ((Vector2)t.D.Offset()).Normalized().Dot(-delta) + 2);
 
                 val += 1.0f * distancePenalty;
+                val += TurnPenalty * absDeltaRotation;
 
                 if (n.Blocked)
                     val += BlockPenalty;

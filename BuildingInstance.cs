@@ -43,6 +43,7 @@ namespace GraphSim
         {
             Building = building;
             ShortName = building.Name.Substr(0,3);
+            Name = $"{Building.Name}";
 
             if (building.Catalysts != null)
             {

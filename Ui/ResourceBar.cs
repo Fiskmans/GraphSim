@@ -33,7 +33,7 @@ namespace GraphSim
         public Font Font;
 
         public ResourceBar()
-        {            
+        {
             BarColor = new Color(0.2f,0.4f,0.2f);
             BorderColor = new Color(1,1,1);
         }
